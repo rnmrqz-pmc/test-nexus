@@ -86,15 +86,70 @@ const App: React.FC = () => {
     addNotification('Approval Required', `Stock out of ${qty} units of ${item.name}`);
   };
 
+  const handleTransferRequest = (item: Item, targetWhId: string, qty: number) => {
+    const targetWh = warehouses.find(w => w.id === targetWhId);
+    const newTransaction: Transaction = {
+      id: `TR-${Date.now()}`,
+      type: 'TRANSFER',
+      itemId: item.id,
+      warehouseId: item.warehouseId,
+      targetWarehouseId: targetWhId,
+      quantity: qty,
+      status: 'PENDING',
+      staffName: 'John Staff',
+      timestamp: new Date().toISOString()
+    };
+    setTransactions(prev => [...prev, newTransaction]);
+    addNotification('Transfer Pending', `Relocating ${qty} units of ${item.name} to ${targetWh?.name}`);
+  };
+
   const handleApproveTransaction = (txId: string) => {
     setTransactions(prev => prev.map(tx => {
       if (tx.id === txId) {
-        const targetItem = items.find(i => i.id === tx.itemId);
-        if (targetItem) {
-          setItems(currItems => currItems.map(i => 
-            i.id === tx.itemId ? { ...i, quantity: i.quantity - tx.quantity } : i
-          ));
-        }
+        const sourceItem = items.find(i => i.id === tx.itemId);
+        if (!sourceItem) return tx;
+
+        setItems(currItems => {
+          let updatedItems = currItems.map(i => 
+            i.id === tx.itemId ? { ...i, quantity: i.quantity - tx.quantity, lastUpdated: new Date().toISOString() } : i
+          );
+
+          if (tx.type === 'TRANSFER' && tx.targetWarehouseId) {
+            const targetWarehouse = warehouses.find(w => w.id === tx.targetWarehouseId);
+            const targetCategory = categories.find(c => c.id === sourceItem.categoryId);
+            
+            // Check if item already exists in target warehouse
+            const existingInTarget = updatedItems.find(i => 
+              i.warehouseId === tx.targetWarehouseId && 
+              i.categoryId === sourceItem.categoryId && 
+              i.name === sourceItem.name
+            );
+
+            if (existingInTarget) {
+              updatedItems = updatedItems.map(i => 
+                i.id === existingInTarget.id 
+                  ? { ...i, quantity: i.quantity + tx.quantity, lastUpdated: new Date().toISOString() } 
+                  : i
+              );
+            } else {
+              // Create new item entry for target warehouse
+              const newId = `it-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+              const newItem: Item = {
+                ...sourceItem,
+                id: newId,
+                warehouseId: tx.targetWarehouseId,
+                quantity: tx.quantity,
+                barcode: `${targetWarehouse?.prefix || 'WH'}-${targetCategory?.code || 'GEN'}-${newId.split('-')[1]}`,
+                lastUpdated: new Date().toISOString()
+              };
+              updatedItems.push(newItem);
+            }
+          }
+
+          return updatedItems;
+        });
+
+        addNotification('Transaction Approved', `${tx.type} request for ${sourceItem.name} completed.`);
         return { ...tx, status: 'APPROVED' as const };
       }
       return tx;
@@ -131,9 +186,9 @@ const App: React.FC = () => {
 
     switch (activeTab) {
       case 'dashboard': return <Dashboard items={items} warehouses={warehouses} transactions={transactions} />;
-      case 'inventory': return <Inventory items={items} setItems={setItems} categories={categories} warehouses={warehouses} onStockOut={handleStockOutRequest} role={role} permissions={permissions[role]} />;
+      case 'inventory': return <Inventory items={items} setItems={setItems} categories={categories} warehouses={warehouses} onStockOut={handleStockOutRequest} onTransfer={handleTransferRequest} role={role} permissions={permissions[role]} />;
       case 'warehouses': return <WarehouseManager warehouses={warehouses} setWarehouses={setWarehouses} role={role} />;
-      case 'approvals': return <Approvals transactions={transactions} items={items} onApprove={handleApproveTransaction} role={role} />;
+      case 'approvals': return <Approvals transactions={transactions} items={items} warehouses={warehouses} onApprove={handleApproveTransaction} role={role} />;
       case 'valuation': return <Valuation items={items} setItems={setItems} warehouses={warehouses} categories={categories} role={role} />;
       case 'reports': return <Reports items={items} warehouses={warehouses} transactions={transactions} role={role} canExport={checkAccess('reports', 'export')} />;
       case 'category-mgmt': return <CategoryManagement categories={categories} setCategories={setCategories} role={role} />;

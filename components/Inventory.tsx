@@ -1,11 +1,12 @@
 
 import React, { useState } from 'react';
 import { Item, Category, Warehouse, ItemStatus, UserRole, Permission } from '../types';
-import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye, Edit3 } from 'lucide-react';
+import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye, Edit3, ArrowRightLeft } from 'lucide-react';
 import AddItemModal from './AddItemModal';
 import ItemDetailsModal from './ItemDetailsModal';
 import EditItemModal from './EditItemModal';
 import StockActionModal from './StockActionModal';
+import TransferItemModal from './TransferItemModal';
 
 interface InventoryProps {
   items: Item[];
@@ -13,16 +14,18 @@ interface InventoryProps {
   categories: Category[];
   warehouses: Warehouse[];
   onStockOut: (item: Item, qty: number) => void;
+  onTransfer: (item: Item, targetWhId: string, qty: number) => void;
   role: UserRole;
   permissions: Permission[];
 }
 
-const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, warehouses, onStockOut, role, permissions }) => {
+const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, warehouses, onStockOut, onTransfer, role, permissions }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedItemForView, setSelectedItemForView] = useState<Item | null>(null);
   const [itemToEdit, setItemToEdit] = useState<Item | null>(null);
+  const [itemToTransfer, setItemToTransfer] = useState<Item | null>(null);
   
   // New state for quantitative adjustments
   const [adjustmentState, setAdjustmentState] = useState<{
@@ -73,7 +76,6 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
     if (adjustmentState.type === 'OUT') {
       onStockOut(adjustmentState.item, qty);
     } else {
-      // For stock IN, we directly update for now, or could create a different transaction type
       setItems(prev => prev.map(i => 
         i.id === adjustmentState.item?.id 
           ? { ...i, quantity: i.quantity + qty, lastUpdated: new Date().toISOString() } 
@@ -81,6 +83,13 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
       ));
     }
     setAdjustmentState({ item: null, type: null });
+  };
+
+  const handleConfirmTransfer = (targetWhId: string, qty: number) => {
+    if (itemToTransfer) {
+      onTransfer(itemToTransfer, targetWhId, qty);
+      setItemToTransfer(null);
+    }
   };
 
   return (
@@ -192,6 +201,13 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button 
+                            onClick={() => setItemToTransfer(item)}
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Transfer Hub"
+                          >
+                            <ArrowRightLeft className="w-4 h-4" />
+                          </button>
+                          <button 
                             onClick={() => setAdjustmentState({ item, type: 'IN' })}
                             className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
                             title="Stock In"
@@ -272,6 +288,12 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                       <Edit3 className="w-4 h-4" />
                     </button>
                     <button 
+                      onClick={() => setItemToTransfer(item)}
+                      className="bg-slate-50 text-slate-400 p-2 rounded-xl active:bg-slate-100"
+                    >
+                      <ArrowRightLeft className="w-4 h-4" />
+                    </button>
+                    <button 
                       onClick={() => setAdjustmentState({ item, type: 'IN' })}
                       className="bg-emerald-50 text-emerald-600 p-2 rounded-xl active:bg-emerald-100"
                     >
@@ -325,6 +347,15 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
           onSave={handleUpdateItem}
           warehouses={warehouses}
           categories={categories}
+        />
+      )}
+
+      {itemToTransfer && (
+        <TransferItemModal
+          item={itemToTransfer}
+          warehouses={warehouses}
+          onClose={() => setItemToTransfer(null)}
+          onConfirm={handleConfirmTransfer}
         />
       )}
 
