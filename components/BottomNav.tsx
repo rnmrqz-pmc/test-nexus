@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Package, ClipboardCheck, ScanLine, User } from 'lucide-react';
+import { LayoutDashboard, Package, ClipboardCheck, ScanLine, User, FileUp } from 'lucide-react';
 import { UserRole, Permission } from '../types';
 
 interface BottomNavProps {
@@ -16,6 +16,7 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, onScan, 
   const tabs = [
     { id: 'dashboard', label: 'Home', icon: LayoutDashboard },
     { id: 'inventory', label: 'Stock', icon: Package },
+    { id: 'bulk-upload', label: 'Batch', icon: FileUp },
     { id: 'scan', label: 'Scan', icon: ScanLine, special: true },
     { id: 'approvals', label: 'Gate', icon: ClipboardCheck },
     { id: 'profile', label: 'Me', icon: User },

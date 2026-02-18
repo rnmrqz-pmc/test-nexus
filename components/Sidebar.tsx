@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { LayoutDashboard, Package, Warehouse, ClipboardCheck, Calculator, BarChart3, ScanLine, Box, LogOut, Settings, ShieldAlert, Tags } from 'lucide-react';
+import { LayoutDashboard, Package, Warehouse, ClipboardCheck, Calculator, BarChart3, ScanLine, Box, LogOut, Settings, ShieldAlert, Tags, FileUp } from 'lucide-react';
 import { UserRole, Permission } from '../types';
 
 interface SidebarProps {
@@ -16,6 +16,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, role, onScan
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'inventory', label: 'Inventory', icon: Package },
+    { id: 'bulk-upload', label: 'Batch Intake', icon: FileUp },
     { id: 'warehouses', label: 'Warehouses', icon: Warehouse },
     { id: 'approvals', label: 'Gatekeeper', icon: ClipboardCheck },
     { id: 'valuation', label: 'Valuation', icon: Calculator },

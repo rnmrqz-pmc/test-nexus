@@ -106,7 +106,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, setItems, warehous
 
             <div className="bg-slate-50 p-5 md:p-6 rounded-2xl border border-slate-100 space-y-4">
               <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <Calculator className="w-4 h-4" /> Landed Cost (USD)
+                <Calculator className="w-4 h-4" /> Landed Cost (PHP)
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 <CostField label="Base" icon={<Package />} value={formData.baseCost} onChange={v => setFormData({...formData, baseCost: v})} />
@@ -119,7 +119,7 @@ const AddItemModal: React.FC<AddItemModalProps> = ({ onClose, setItems, warehous
             <div className="flex flex-col md:flex-row items-center justify-between p-6 bg-indigo-900 rounded-3xl text-white gap-4">
               <div className="text-center md:text-left">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Unit Price</p>
-                <p className="text-4xl font-black">${trueUnitCost.toFixed(2)}</p>
+                <p className="text-4xl font-black">₱{trueUnitCost.toFixed(2)}</p>
               </div>
               <button type="submit" className="w-full md:w-auto bg-white text-indigo-600 px-10 py-4 rounded-2xl font-black text-sm shadow-xl active:scale-95 transition-all">
                 Register Stock
@@ -139,7 +139,7 @@ const CostField = ({ label, icon, value, onChange }: { label: string, icon: Reac
       <span className="text-[9px] font-black uppercase tracking-wider">{label}</span>
     </div>
     <div className="relative">
-      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">$</span>
+      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">₱</span>
       <input type="number" className="w-full bg-white border border-slate-200 rounded-xl pl-5 pr-2 py-3 text-xs focus:ring-1 focus:ring-indigo-500 outline-none font-bold text-slate-700" value={value} onChange={e => onChange(parseFloat(e.target.value) || 0)} />
     </div>
   </div>

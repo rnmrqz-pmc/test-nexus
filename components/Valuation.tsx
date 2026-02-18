@@ -59,7 +59,7 @@ const Valuation: React.FC<ValuationProps> = ({ items, setItems, warehouses, cate
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-2xl font-extrabold text-slate-900">Valuation Engine</h2>
-          <p className="text-slate-500">Calculate True Unit Cost via Landed Cost model</p>
+          <p className="text-slate-500">Calculate True Unit Cost via Landed Cost model (PHP)</p>
         </div>
       </div>
 
@@ -144,16 +144,16 @@ const Valuation: React.FC<ValuationProps> = ({ items, setItems, warehouses, cate
         <div className="space-y-6">
           <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl flex flex-col justify-between min-h-[200px] border border-slate-800">
             <div>
-              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">True Unit Cost Forecast</p>
-              <h4 className="text-4xl font-black">${trueUnitCost.toFixed(2)}</h4>
+              <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">True Unit Cost Forecast (PHP)</p>
+              <h4 className="text-4xl font-black">₱{trueUnitCost.toFixed(2)}</h4>
               <p className="text-slate-500 text-xs mt-2">Aggregated from all landed components divided by {formData.quantity} units.</p>
             </div>
             <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
               <div className="bg-slate-800 px-3 py-2 rounded-lg text-[10px] whitespace-nowrap">
-                <span className="text-slate-500">Base:</span> ${formData.baseCost}
+                <span className="text-slate-500">Base:</span> ₱{formData.baseCost}
               </div>
               <div className="bg-slate-800 px-3 py-2 rounded-lg text-[10px] whitespace-nowrap">
-                <span className="text-slate-500">Logistics:</span> ${formData.freight + formData.duties + formData.taxes}
+                <span className="text-slate-500">Logistics:</span> ₱{formData.freight + formData.duties + formData.taxes}
               </div>
             </div>
           </div>
@@ -163,7 +163,7 @@ const Valuation: React.FC<ValuationProps> = ({ items, setItems, warehouses, cate
               <Info className="w-4 h-4" /> Valuation Note
             </h5>
             <p className="text-xs text-indigo-700 leading-relaxed">
-              Using Weighted Average valuation. Ensure all components like Freight and Taxes are accurately recorded for GAAP compliance.
+              Using Weighted Average valuation (PHP). Ensure all components like Freight and Taxes are accurately recorded for standard compliance.
             </p>
           </div>
         </div>
@@ -179,7 +179,7 @@ const CostInput = ({ label, icon, value, onChange }: { label: string, icon: Reac
       <label className="text-[10px] font-bold uppercase tracking-wider">{label}</label>
     </div>
     <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">$</span>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₱</span>
       <input 
         type="number" 
         className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-2 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none font-bold"

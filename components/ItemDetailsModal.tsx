@@ -111,7 +111,7 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({ item, onClose, ware
               <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div>
                   <p className="text-indigo-300 text-[10px] font-black uppercase tracking-widest mb-1">True Unit Cost (Landed)</p>
-                  <h4 className="text-5xl font-black">${item.trueUnitCost.toFixed(2)}</h4>
+                  <h4 className="text-5xl font-black">₱{item.trueUnitCost.toFixed(2)}</h4>
                   <p className="text-slate-400 text-xs mt-3 max-w-[200px] font-medium">Calculated total acquisition cost per individual unit.</p>
                 </div>
                 
@@ -122,7 +122,7 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({ item, onClose, ware
                         <cost.icon className="w-3 h-3" />
                         <span className="text-[9px] font-bold uppercase tracking-wider">{cost.label}</span>
                       </div>
-                      <p className="text-sm font-bold">${cost.value.toFixed(2)}</p>
+                      <p className="text-sm font-bold">₱{cost.value.toFixed(2)}</p>
                     </div>
                   ))}
                 </div>

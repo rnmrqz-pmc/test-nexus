@@ -14,6 +14,7 @@ import Reports from './components/Reports';
 import Login from './components/Login';
 import CategoryManagement from './components/CategoryManagement';
 import AccessControl from './components/AccessControl';
+import BulkUpload from './components/BulkUpload';
 import { initialItems, initialWarehouses, initialCategories } from './constants';
 
 const App: React.FC = () => {
@@ -38,11 +39,13 @@ const App: React.FC = () => {
       { moduleId: 'reports', actions: ['view', 'update', 'delete', 'export'] },
       { moduleId: 'category-mgmt', actions: ['view', 'update', 'delete', 'export'] },
       { moduleId: 'access-control', actions: ['view', 'update', 'delete', 'export'] },
+      { moduleId: 'bulk-upload', actions: ['view', 'update', 'delete', 'export'] },
     ],
     [UserRole.STAFF]: [
       { moduleId: 'dashboard', actions: ['view'] },
       { moduleId: 'inventory', actions: ['view', 'update'] },
       { moduleId: 'valuation', actions: ['view', 'update'] },
+      { moduleId: 'bulk-upload', actions: ['view', 'update'] },
     ],
     [UserRole.ACCOUNTANT]: [
       { moduleId: 'dashboard', actions: ['view'] },
@@ -135,6 +138,7 @@ const App: React.FC = () => {
       case 'reports': return <Reports items={items} warehouses={warehouses} transactions={transactions} role={role} canExport={checkAccess('reports', 'export')} />;
       case 'category-mgmt': return <CategoryManagement categories={categories} setCategories={setCategories} role={role} />;
       case 'access-control': return <AccessControl permissions={permissions} setPermissions={setPermissions} role={role} />;
+      case 'bulk-upload': return <BulkUpload warehouses={warehouses} categories={categories} setItems={setItems} addNotification={addNotification} role={role} />;
       default: return <Dashboard items={items} warehouses={warehouses} transactions={transactions} />;
     }
   };

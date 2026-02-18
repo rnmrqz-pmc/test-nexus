@@ -41,8 +41,8 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions }
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <StatCard title="Value" value={`$${(totalValue/1000).toFixed(1)}k`} trend="+12%" icon={<DollarSign />} color="indigo" />
-        <StatCard title="Aging" value={`$${(oldStockValue/1000).toFixed(1)}k`} trend="-2%" icon={<AlertTriangle />} color="rose" />
+        <StatCard title="Value" value={`₱${(totalValue/1000).toFixed(1)}k`} trend="+12%" icon={<DollarSign />} color="indigo" />
+        <StatCard title="Aging" value={`₱${(oldStockValue/1000).toFixed(1)}k`} trend="-2%" icon={<AlertTriangle />} color="rose" />
         <StatCard title="Stock" value={items.length.toString()} trend="+8" icon={<Package />} color="emerald" />
         <StatCard title="Alerts" value={transactions.filter(t => t.status === 'PENDING').length.toString()} trend="Action" icon={<TrendingUp />} color="amber" />
       </div>

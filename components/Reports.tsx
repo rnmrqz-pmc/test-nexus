@@ -22,7 +22,7 @@ const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canEx
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-extrabold text-slate-900">Operational Analytics</h2>
-          <p className="text-slate-500">Automated monthly summaries and forecasting</p>
+          <p className="text-slate-500">Automated monthly summaries and forecasting (PHP)</p>
         </div>
         {/* Only show export button if user has permission */}
         {canExport && (
@@ -46,9 +46,9 @@ const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canEx
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 text-rose-500 mb-2 font-black text-[10px] uppercase tracking-widest">
-              <AlertCircle className="w-3 h-3" /> Aging Liability
+              <AlertCircle className="w-3 h-3" /> Aging Liability (PHP)
             </div>
-            <h4 className="text-3xl font-black text-slate-900">${agingValue.toLocaleString()}</h4>
+            <h4 className="text-3xl font-black text-slate-900">₱{agingValue.toLocaleString()}</h4>
             <p className="text-sm text-slate-400 mt-2 leading-relaxed">Value of stock flagged as Old/Used (40% discount provisioned).</p>
           </div>
         </div>
@@ -66,7 +66,7 @@ const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canEx
 
       <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-50 flex justify-between items-center">
-          <h3 className="font-bold text-slate-800">Aging Stock Breakdown</h3>
+          <h3 className="font-bold text-slate-800">Aging Stock Breakdown (PHP)</h3>
           <span className="bg-slate-50 px-3 py-1 rounded-full text-xs font-bold text-slate-500">{agingStock.length} Items</span>
         </div>
         <div className="overflow-x-auto">
@@ -86,8 +86,8 @@ const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canEx
                   <td className="px-6 py-4 font-bold text-slate-700">{i.name}</td>
                   <td className="px-6 py-4 font-mono text-xs text-slate-400">{i.barcode}</td>
                   <td className="px-6 py-4 text-center font-bold text-slate-600">{i.quantity}</td>
-                  <td className="px-6 py-4 text-right font-bold text-slate-900">${(i.quantity * i.trueUnitCost).toLocaleString()}</td>
-                  <td className="px-6 py-4 text-right font-bold text-rose-500">-${(i.quantity * i.trueUnitCost * 0.4).toLocaleString()}</td>
+                  <td className="px-6 py-4 text-right font-bold text-slate-900">₱{(i.quantity * i.trueUnitCost).toLocaleString()}</td>
+                  <td className="px-6 py-4 text-right font-bold text-rose-500">-₱{(i.quantity * i.trueUnitCost * 0.4).toLocaleString()}</td>
                 </tr>
               ))}
             </tbody>

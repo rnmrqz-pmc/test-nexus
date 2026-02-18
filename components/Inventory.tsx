@@ -1,9 +1,10 @@
 
 import React, { useState } from 'react';
 import { Item, Category, Warehouse, ItemStatus, UserRole, Permission } from '../types';
-import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye } from 'lucide-react';
+import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye, Edit3 } from 'lucide-react';
 import AddItemModal from './AddItemModal';
 import ItemDetailsModal from './ItemDetailsModal';
+import EditItemModal from './EditItemModal';
 
 interface InventoryProps {
   items: Item[];
@@ -20,6 +21,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedItemForView, setSelectedItemForView] = useState<Item | null>(null);
+  const [itemToEdit, setItemToEdit] = useState<Item | null>(null);
 
   const canAction = (action: 'update' | 'delete' | 'export') => 
     permissions.some(p => p.moduleId === 'inventory' && p.actions.includes(action));
@@ -51,6 +53,11 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
     if (confirm('Permanently delete SKU?')) {
       setItems(prev => prev.filter(i => i.id !== id));
     }
+  };
+
+  const handleUpdateItem = (updatedItem: Item) => {
+    setItems(prev => prev.map(item => item.id === updatedItem.id ? updatedItem : item));
+    setItemToEdit(null);
   };
 
   return (
@@ -139,7 +146,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                   <td className="px-6 py-4 text-sm text-slate-600">{getWarehouseName(item.warehouseId)}</td>
                   <td className="px-6 py-4 font-bold text-slate-900">{item.quantity} units</td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => setSelectedItemForView(item)}
                         className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
@@ -148,13 +155,22 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                         <Eye className="w-4 h-4" />
                       </button>
                       {canAction('update') && (
-                        <button 
-                          onClick={() => onStockOut(item, 1)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                          title="Stock Out"
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
+                        <>
+                          <button 
+                            onClick={() => setItemToEdit(item)}
+                            className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Edit SKU"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => onStockOut(item, 1)}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            title="Stock Out"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                        </>
                       )}
                       {canAction('delete') && (
                         <button 
@@ -213,12 +229,20 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                   <Eye className="w-4 h-4" />
                 </button>
                 {canAction('update') && (
-                  <button 
-                    onClick={() => onStockOut(item, 1)}
-                    className="bg-indigo-50 text-indigo-600 p-2 rounded-xl active:bg-indigo-100"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
+                  <>
+                    <button 
+                      onClick={() => setItemToEdit(item)}
+                      className="bg-slate-50 text-slate-400 p-2 rounded-xl active:bg-slate-100"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => onStockOut(item, 1)}
+                      className="bg-indigo-50 text-indigo-600 p-2 rounded-xl active:bg-indigo-100"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                  </>
                 )}
                 {canAction('delete') && (
                    <button 
@@ -250,6 +274,16 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
           warehouse={warehouses.find(w => w.id === selectedItemForView.warehouseId)}
           category={categories.find(c => c.id === selectedItemForView.categoryId)}
           allCategories={categories}
+        />
+      )}
+
+      {itemToEdit && (
+        <EditItemModal
+          item={itemToEdit}
+          onClose={() => setItemToEdit(null)}
+          onSave={handleUpdateItem}
+          warehouses={warehouses}
+          categories={categories}
         />
       )}
     </div>
