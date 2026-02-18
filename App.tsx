@@ -178,6 +178,17 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleRejectTransaction = (txId: string, reason: string) => {
+    setTransactions(prev => prev.map(tx => {
+      if (tx.id === txId) {
+        const sourceItem = items.find(i => i.id === tx.itemId);
+        addNotification('Transaction Rejected', `${tx.type} request for ${sourceItem?.name || 'Item'} was declined.`);
+        return { ...tx, status: 'REJECTED' as const, rejectionReason: reason };
+      }
+      return tx;
+    }));
+  };
+
   const handleScanSuccess = (barcode: string) => {
     const found = items.find(i => i.barcode === barcode);
     if (found) {
@@ -243,7 +254,7 @@ const App: React.FC = () => {
       case 'dashboard': return <Dashboard items={items} warehouses={warehouses} transactions={transactions} />;
       case 'inventory': return <Inventory items={items} setItems={setItems} categories={categories} warehouses={warehouses} onStockOut={handleStockOutRequest} onTransfer={handleTransferRequest} role={role} permissions={permissions[role]} />;
       case 'warehouses': return <WarehouseManager warehouses={warehouses} setWarehouses={setWarehouses} role={role} />;
-      case 'approvals': return <Approvals transactions={transactions} items={items} warehouses={warehouses} onApprove={handleApproveTransaction} role={role} />;
+      case 'approvals': return <Approvals transactions={transactions} items={items} warehouses={warehouses} onApprove={handleApproveTransaction} onReject={handleRejectTransaction} role={role} />;
       case 'valuation': return <Valuation items={items} setItems={setItems} warehouses={warehouses} categories={categories} role={role} />;
       case 'reports': return <Reports items={items} warehouses={warehouses} transactions={transactions} role={role} canExport={checkAccess('reports', 'export')} />;
       case 'category-mgmt': return <CategoryManagement categories={categories} setCategories={setCategories} role={role} />;

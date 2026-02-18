@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Item, Category, Warehouse, ItemStatus, UserRole, Permission } from '../types';
-import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye, Edit3, ArrowRightLeft, Check, ChevronLeft, ChevronRight as ChevronRightIcon, Printer, Scan } from 'lucide-react';
+import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye, Edit3, ArrowRightLeft, Check, ChevronLeft, ChevronRight as ChevronRightIcon, Printer, Scan, List } from 'lucide-react';
 import AddItemModal from './AddItemModal';
 import ItemDetailsModal from './ItemDetailsModal';
 import EditItemModal from './EditItemModal';
@@ -37,6 +37,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isShowingAll, setIsShowingAll] = useState(false);
 
   // Reset pagination on filter change
   useEffect(() => {
@@ -54,10 +55,11 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
   });
 
   // Calculate Pagination
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const effectiveItemsPerPage = isShowingAll ? filteredItems.length : itemsPerPage;
+  const indexOfLastItem = currentPage * effectiveItemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - effectiveItemsPerPage;
+  const currentItems = isShowingAll ? filteredItems : filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = isShowingAll ? 1 : Math.ceil(filteredItems.length / itemsPerPage);
 
   const [adjustmentState, setAdjustmentState] = useState<{
     item: Item | null,
@@ -153,6 +155,11 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
   const handleBulkPrint = () => {
     const selectedItems = items.filter(i => selectedIds.has(i.id));
     setItemsToPrint(selectedItems);
+  };
+
+  const handleShowAll = () => {
+    setIsShowingAll(!isShowingAll);
+    setCurrentPage(1);
   };
 
   return (
@@ -337,57 +344,73 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         
         {/* Pagination UI */}
         <div className="px-6 py-4 border-t border-slate-50 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/30">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <p className="text-xs font-bold text-slate-500">
-              Showing <span className="text-slate-900">{indexOfFirstItem + 1}</span> to <span className="text-slate-900">{Math.min(indexOfLastItem, filteredItems.length)}</span> of <span className="text-slate-900">{filteredItems.length}</span> SKUs
+              Showing <span className="text-slate-900">{isShowingAll ? 1 : indexOfFirstItem + 1}</span> to <span className="text-slate-900">{isShowingAll ? filteredItems.length : Math.min(indexOfLastItem, filteredItems.length)}</span> of <span className="text-slate-900">{filteredItems.length}</span> SKUs
             </p>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rows per page:</span>
-              <select 
-                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
-                value={itemsPerPage}
-                onChange={(e) => {
-                  setItemsPerPage(Number(e.target.value));
-                  setCurrentPage(1);
-                }}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rows per page:</span>
+                <select 
+                  disabled={isShowingAll}
+                  className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer disabled:opacity-30"
+                  value={itemsPerPage}
+                  onChange={(e) => {
+                    setItemsPerPage(Number(e.target.value));
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value={5}>5</option>
+                  <option value={10}>10</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
+              <button 
+                onClick={handleShowAll}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  isShowingAll 
+                    ? 'bg-indigo-600 text-white shadow-md' 
+                    : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
+                }`}
               >
-                <option value={5}>5</option>
-                <option value={10}>10</option>
-                <option value={25}>25</option>
-                <option value={50}>50</option>
-              </select>
+                <List className="w-3.5 h-3.5" />
+                {isShowingAll ? 'Paginate' : 'Show All'}
+              </button>
             </div>
           </div>
           
-          <div className="flex items-center gap-1">
-            <button 
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:bg-white hover:text-indigo-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+          {!isShowingAll && (
+            <div className="flex items-center gap-1">
               <button 
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${
-                  currentPage === page 
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
-                    : 'text-slate-500 hover:bg-white border border-transparent hover:border-slate-200'
-                }`}
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:bg-white hover:text-indigo-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
               >
-                {page}
+                <ChevronLeft className="w-4 h-4" />
               </button>
-            ))}
-            <button 
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:bg-white hover:text-indigo-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
-            >
-              <ChevronRightIcon className="w-4 h-4" />
-            </button>
-          </div>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <button 
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${
+                    currentPage === page 
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
+                      : 'text-slate-500 hover:bg-white border border-transparent hover:border-slate-200'
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:bg-white hover:text-indigo-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+              >
+                <ChevronRightIcon className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -482,6 +505,14 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
             </div>
           </div>
         ))}
+        {filteredItems.length > 5 && (
+           <button 
+            onClick={handleShowAll}
+            className="w-full py-3 bg-white border border-slate-200 rounded-2xl text-xs font-black text-slate-400 uppercase tracking-widest hover:bg-slate-50"
+           >
+             {isShowingAll ? 'Show Less' : `Show All ${filteredItems.length} Items`}
+           </button>
+        )}
       </div>
 
       {/* Bulk Action Bar */}

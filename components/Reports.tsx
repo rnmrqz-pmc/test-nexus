@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Item, Warehouse, Transaction, ItemStatus, UserRole } from '../types';
 import { 
   BarChart3, 
@@ -15,6 +15,8 @@ import {
   Activity,
   Zap
 } from 'lucide-react';
+import RiskManifestModal from './RiskManifestModal';
+import ReportPrintView from './ReportPrintView';
 
 interface Props {
   items: Item[];
@@ -25,6 +27,9 @@ interface Props {
 }
 
 const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canExport }) => {
+  const [showRiskModal, setShowRiskModal] = useState(false);
+  const [showPrintView, setShowPrintView] = useState(false);
+
   // 1. Total Value per Warehouse
   const warehouseValuations = useMemo(() => {
     const globalTotal = items.reduce((sum, i) => sum + (i.quantity * i.trueUnitCost), 0);
@@ -69,6 +74,18 @@ const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canEx
       .filter(t => t.type === 'STOCK_OUT' && t.status === 'APPROVED')
       .reduce((sum, t) => sum + t.quantity, 0);
     
+    // Calculate how many items are actually at risk based on velocity
+    const riskItemsCount = items.filter(item => {
+        const itemOutbound = transactions
+            .filter(t => t.itemId === item.id && t.type === 'STOCK_OUT' && t.status === 'APPROVED')
+            .reduce((sum, t) => sum + t.quantity, 0);
+        
+        const demandPerDay = itemOutbound / 30;
+        const daysRemaining = demandPerDay > 0 ? (item.quantity / demandPerDay) : 999;
+        
+        return daysRemaining <= 14 || item.quantity < 5;
+    }).length;
+    
     // Simulate a trend based on transaction volume vs previous month (mocked logic)
     const currentVolume = monthlyOutbound;
     const prevVolume = monthlyOutbound * 0.85; // Mocking growth
@@ -78,9 +95,17 @@ const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canEx
       monthlyOutbound,
       velocityChange,
       forecastLabel: velocityChange > 0 ? 'High Demand' : 'Steady',
-      riskItems: items.filter(i => i.quantity < (monthlyOutbound / 10)).length // Items with low stock relative to demand
+      riskItems: riskItemsCount
     };
   }, [transactions, items]);
+
+  const handleDownloadPDF = () => {
+    setShowPrintView(true);
+    // Give react time to render the print view before calling print
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
 
   const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
 
@@ -98,7 +123,10 @@ const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canEx
         </div>
         
         {canExport && (
-          <button className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-xs shadow-xl active:scale-95 transition-all">
+          <button 
+            onClick={handleDownloadPDF}
+            className="flex items-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-2xl font-black text-xs shadow-xl active:scale-95 transition-all"
+          >
             <FileDown className="w-4 h-4" /> Download PDF Report
           </button>
         )}
@@ -154,10 +182,13 @@ const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canEx
           </div>
           <div className="relative z-10">
             <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest mb-1">Stock-Out Risk Forecast</p>
-            <h4 className="text-3xl font-black">{consumptionMetrics.riskItems} <span className="text-xs text-slate-400 font-bold">CRITICAL</span></h4>
+            <h4 className="text-3xl font-black">{consumptionMetrics.riskItems} <span className="text-xs text-slate-400 font-bold">AT RISK</span></h4>
             <p className="text-[10px] text-slate-400 mt-2 leading-relaxed">SKUs likely to reach zero-stock within the next audit cycle based on velocity.</p>
           </div>
-          <button className="mt-4 text-[10px] font-black uppercase text-indigo-400 hover:text-white flex items-center gap-2 transition-colors relative z-10">
+          <button 
+            onClick={() => setShowRiskModal(true)}
+            className="mt-4 text-[10px] font-black uppercase text-indigo-400 hover:text-white flex items-center gap-2 transition-colors relative z-10"
+          >
             View Risk Manifest <ChevronRight className="w-3 h-3" />
           </button>
         </div>
@@ -279,7 +310,10 @@ const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canEx
             There are currently <span className="text-white font-bold">{consumptionMetrics.riskItems} high-risk items</span> that may face total depletion within 14 days.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
-            <button className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-black text-sm hover:bg-indigo-50 transition-all shadow-xl active:scale-95">
+            <button 
+              onClick={() => setShowRiskModal(true)}
+              className="bg-white text-indigo-600 px-8 py-4 rounded-2xl font-black text-sm hover:bg-indigo-50 transition-all shadow-xl active:scale-95"
+            >
               Generate Re-order Manifest
             </button>
             <button className="bg-indigo-500/30 backdrop-blur-sm text-white border border-indigo-400 px-8 py-4 rounded-2xl font-black text-sm hover:bg-indigo-500/50 transition-all">
@@ -288,6 +322,24 @@ const Reports: React.FC<Props> = ({ items, warehouses, transactions, role, canEx
           </div>
         </div>
       </div>
+
+      {showRiskModal && (
+        <RiskManifestModal 
+          items={items}
+          transactions={transactions}
+          warehouses={warehouses}
+          onClose={() => setShowRiskModal(false)}
+        />
+      )}
+
+      {showPrintView && (
+        <ReportPrintView 
+          items={items}
+          warehouses={warehouses}
+          transactions={transactions}
+          onClose={() => setShowPrintView(false)}
+        />
+      )}
     </div>
   );
 };

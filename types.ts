@@ -60,6 +60,7 @@ export interface Transaction {
   targetWarehouseId?: string;
   quantity: number;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string;
   staffName: string;
   timestamp: string;
 }
