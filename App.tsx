@@ -12,21 +12,30 @@ import Scanner from './components/Scanner';
 import Valuation from './components/Valuation';
 import Reports from './components/Reports';
 import Login from './components/Login';
+import TwoFactorAuth from './components/TwoFactorAuth';
 import CategoryManagement from './components/CategoryManagement';
 import AccessControl from './components/AccessControl';
 import BulkUpload from './components/BulkUpload';
+import ScanActionMenu from './components/ScanActionMenu';
+import StockActionModal from './components/StockActionModal';
+import TransferItemModal from './components/TransferItemModal';
 import { initialItems, initialWarehouses, initialCategories } from './constants';
 
 const App: React.FC = () => {
   const [role, setRole] = useState<UserRole>(UserRole.ADMIN);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [isVerified, setIsVerified] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [warehouses, setWarehouses] = useState<Warehouse[]>(initialWarehouses);
   const [items, setItems] = useState<Item[]>(initialItems);
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  
+  // Scanning State
   const [showScanner, setShowScanner] = useState(false);
+  const [scannedItem, setScannedItem] = useState<Item | null>(null);
+  const [activeScanFlow, setActiveScanFlow] = useState<'IN' | 'OUT' | 'TRANSFER' | null>(null);
 
   // Default Permissions
   const [permissions, setPermissions] = useState<RolePermissionMap>({
@@ -71,6 +80,17 @@ const App: React.FC = () => {
     setNotifications(prev => [newNotif, ...prev]);
   };
 
+  const handleStockInDirect = (item: Item, qty: number) => {
+    setItems(prev => prev.map(i => 
+      i.id === item.id 
+        ? { ...i, quantity: i.quantity + qty, lastUpdated: new Date().toISOString() } 
+        : i
+    ));
+    addNotification('Stock Updated', `Added ${qty} units to ${item.name}`);
+    setScannedItem(null);
+    setActiveScanFlow(null);
+  };
+
   const handleStockOutRequest = (item: Item, qty: number) => {
     const newTransaction: Transaction = {
       id: `TX-${Date.now()}`,
@@ -84,6 +104,8 @@ const App: React.FC = () => {
     };
     setTransactions(prev => [...prev, newTransaction]);
     addNotification('Approval Required', `Stock out of ${qty} units of ${item.name}`);
+    setScannedItem(null);
+    setActiveScanFlow(null);
   };
 
   const handleTransferRequest = (item: Item, targetWhId: string, qty: number) => {
@@ -101,6 +123,8 @@ const App: React.FC = () => {
     };
     setTransactions(prev => [...prev, newTransaction]);
     addNotification('Transfer Pending', `Relocating ${qty} units of ${item.name} to ${targetWh?.name}`);
+    setScannedItem(null);
+    setActiveScanFlow(null);
   };
 
   const handleApproveTransaction = (txId: string) => {
@@ -118,7 +142,6 @@ const App: React.FC = () => {
             const targetWarehouse = warehouses.find(w => w.id === tx.targetWarehouseId);
             const targetCategory = categories.find(c => c.id === sourceItem.categoryId);
             
-            // Check if item already exists in target warehouse
             const existingInTarget = updatedItems.find(i => 
               i.warehouseId === tx.targetWarehouseId && 
               i.categoryId === sourceItem.categoryId && 
@@ -132,7 +155,6 @@ const App: React.FC = () => {
                   : i
               );
             } else {
-              // Create new item entry for target warehouse
               const newId = `it-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
               const newItem: Item = {
                 ...sourceItem,
@@ -156,18 +178,51 @@ const App: React.FC = () => {
     }));
   };
 
+  const handleScanSuccess = (barcode: string) => {
+    const found = items.find(i => i.barcode === barcode);
+    if (found) {
+      setScannedItem(found);
+      setShowScanner(false);
+    } else {
+      addNotification('Scan Error', `Barcode ${barcode} not found in registry.`);
+      setShowScanner(false);
+    }
+  };
+
   const handleLogin = (selectedRole: UserRole) => {
     setRole(selectedRole);
     setIsLoggedIn(true);
+    setIsVerified(false);
+  };
+
+  const handleVerify = () => {
+    setIsVerified(true);
+    addNotification('Security Verified', 'Identity confirmed via 2FA');
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setIsVerified(false);
     setActiveTab('dashboard');
+  };
+
+  const handleCancel2FA = () => {
+    setIsLoggedIn(false);
+    setIsVerified(false);
   };
 
   if (!isLoggedIn) {
     return <Login onLogin={handleLogin} />;
+  }
+
+  if (isLoggedIn && !isVerified) {
+    return (
+      <TwoFactorAuth 
+        onVerify={handleVerify} 
+        onCancel={handleCancel2FA} 
+        userRole={role}
+      />
+    );
   }
 
   const renderContent = () => {
@@ -238,14 +293,42 @@ const App: React.FC = () => {
       {showScanner && (
         <Scanner 
           onClose={() => setShowScanner(false)} 
-          onScan={(barcode) => {
-            const found = items.find(i => i.barcode === barcode);
-            if (found) {
-              setActiveTab('inventory');
-              addNotification('Barcode Scanned', `Detected: ${found.name}`);
-            }
-            setShowScanner(false);
-          }}
+          onScan={handleScanSuccess}
+        />
+      )}
+
+      {scannedItem && !activeScanFlow && (
+        <ScanActionMenu 
+          item={scannedItem} 
+          onClose={() => setScannedItem(null)} 
+          onSelectAction={setActiveScanFlow}
+        />
+      )}
+
+      {scannedItem && activeScanFlow === 'IN' && (
+        <StockActionModal 
+          item={scannedItem} 
+          type="IN" 
+          onClose={() => setActiveScanFlow(null)} 
+          onConfirm={(qty) => handleStockInDirect(scannedItem, qty)}
+        />
+      )}
+
+      {scannedItem && activeScanFlow === 'OUT' && (
+        <StockActionModal 
+          item={scannedItem} 
+          type="OUT" 
+          onClose={() => setActiveScanFlow(null)} 
+          onConfirm={(qty) => handleStockOutRequest(scannedItem, qty)}
+        />
+      )}
+
+      {scannedItem && activeScanFlow === 'TRANSFER' && (
+        <TransferItemModal 
+          item={scannedItem} 
+          warehouses={warehouses} 
+          onClose={() => setActiveScanFlow(null)} 
+          onConfirm={(targetWhId, qty) => handleTransferRequest(scannedItem, targetWhId, qty)}
         />
       )}
     </div>

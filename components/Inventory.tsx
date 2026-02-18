@@ -1,13 +1,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Item, Category, Warehouse, ItemStatus, UserRole, Permission } from '../types';
-import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye, Edit3, ArrowRightLeft, Check, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye, Edit3, ArrowRightLeft, Check, ChevronLeft, ChevronRight as ChevronRightIcon, Printer, Scan } from 'lucide-react';
 import AddItemModal from './AddItemModal';
 import ItemDetailsModal from './ItemDetailsModal';
 import EditItemModal from './EditItemModal';
 import StockActionModal from './StockActionModal';
 import TransferItemModal from './TransferItemModal';
 import BulkTransferModal from './BulkTransferModal';
+import BarcodeLabelModal from './BarcodeLabelModal';
 
 interface InventoryProps {
   items: Item[];
@@ -28,6 +29,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
   const [itemToEdit, setItemToEdit] = useState<Item | null>(null);
   const [itemToTransfer, setItemToTransfer] = useState<Item | null>(null);
   const [isBulkTransferOpen, setIsBulkTransferOpen] = useState(false);
+  const [itemsToPrint, setItemsToPrint] = useState<Item[] | null>(null);
   
   // Selection State
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -146,6 +148,11 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
     });
     setIsBulkTransferOpen(false);
     setSelectedIds(new Set());
+  };
+
+  const handleBulkPrint = () => {
+    const selectedItems = items.filter(i => selectedIds.has(i.id));
+    setItemsToPrint(selectedItems);
   };
 
   return (
@@ -280,6 +287,13 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                             title="Edit SKU"
                           >
                             <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => setItemsToPrint([item])}
+                            className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                            title="Print Label"
+                          >
+                            <Printer className="w-4 h-4" />
                           </button>
                           <button 
                             onClick={() => setItemToTransfer(item)}
@@ -431,6 +445,12 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                       <Edit3 className="w-4 h-4" />
                     </button>
                     <button 
+                      onClick={() => setItemsToPrint([item])}
+                      className="bg-slate-50 text-slate-400 p-2 rounded-xl active:bg-slate-100"
+                    >
+                      <Printer className="w-4 h-4" />
+                    </button>
+                    <button 
                       onClick={() => setItemToTransfer(item)}
                       className="bg-slate-50 text-slate-400 p-2 rounded-xl active:bg-slate-100"
                     >
@@ -475,16 +495,22 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
             <div className="h-8 w-px bg-white/10" />
             <div className="flex gap-2">
               <button 
+                onClick={handleBulkPrint}
+                className="flex items-center gap-2 px-4 py-2 bg-white text-slate-900 hover:bg-slate-100 rounded-xl text-xs font-bold transition-all"
+              >
+                <Printer className="w-4 h-4" /> Print Labels
+              </button>
+              <button 
                 onClick={handleBulkDelete}
                 className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-xs font-bold transition-all"
               >
-                <Trash2 className="w-4 h-4" /> Delete Selected
+                <Trash2 className="w-4 h-4" /> Delete
               </button>
               <button 
                 onClick={() => setIsBulkTransferOpen(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl text-xs font-bold transition-all"
               >
-                <ArrowRightLeft className="w-4 h-4" /> Bulk Relocate
+                <ArrowRightLeft className="w-4 h-4" /> Relocate
               </button>
               <button 
                 onClick={() => setSelectedIds(new Set())}
@@ -541,6 +567,14 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
           warehouses={warehouses}
           onClose={() => setIsBulkTransferOpen(false)}
           onConfirm={handleBulkRelocate}
+        />
+      )}
+
+      {itemsToPrint && (
+        <BarcodeLabelModal 
+          items={itemsToPrint}
+          warehouses={warehouses}
+          onClose={() => setItemsToPrint(null)}
         />
       )}
 

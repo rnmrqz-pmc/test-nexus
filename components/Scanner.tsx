@@ -75,18 +75,18 @@ const Scanner: React.FC<ScannerProps> = ({ onClose, onScan }) => {
         </p>
         
         <div className="flex gap-4 w-full max-w-sm">
-          {/* Mock Buttons for Prototype Demo */}
+          {/* Mock Buttons for Prototype Demo - Using real barcodes from constants.tsx */}
           <button 
-            onClick={() => onScan('WHA-STR-it-1')}
-            className="flex-1 bg-white hover:bg-slate-50 text-slate-900 py-3 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2"
+            onClick={() => onScan('WHA-COM-it-1')}
+            className="flex-1 bg-white hover:bg-slate-50 text-slate-900 py-3 rounded-xl font-bold text-[10px] shadow-xl flex flex-col items-center justify-center gap-1"
           >
-            <Scan className="w-4 h-4" /> Simulate Scan (Steel)
+            <Scan className="w-4 h-4" /> <span>Steel Barcode</span>
           </button>
           <button 
-            onClick={() => onScan('WHB-LIN-it-2')}
-            className="flex-1 bg-white hover:bg-slate-50 text-slate-900 py-3 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2"
+            onClick={() => onScan('WHB-GHS-it-2')}
+            className="flex-1 bg-white hover:bg-slate-50 text-slate-900 py-3 rounded-xl font-bold text-[10px] shadow-xl flex flex-col items-center justify-center gap-1"
           >
-            <Scan className="w-4 h-4" /> Simulate Scan (Linen)
+            <Scan className="w-4 h-4" /> <span>Linen Barcode</span>
           </button>
         </div>
       </div>
