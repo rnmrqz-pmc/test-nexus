@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { Item, Category, Warehouse, ItemStatus, UserRole, Permission } from '../types';
-import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown } from 'lucide-react';
+import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye } from 'lucide-react';
 import AddItemModal from './AddItemModal';
+import ItemDetailsModal from './ItemDetailsModal';
 
 interface InventoryProps {
   items: Item[];
@@ -17,8 +18,8 @@ interface InventoryProps {
 const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, warehouses, onStockOut, role, permissions }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [qtyToOut, setQtyToOut] = useState<Record<string, number>>({});
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedItemForView, setSelectedItemForView] = useState<Item | null>(null);
 
   const canAction = (action: 'update' | 'delete' | 'export') => 
     permissions.some(p => p.moduleId === 'inventory' && p.actions.includes(action));
@@ -139,10 +140,18 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                   <td className="px-6 py-4 font-bold text-slate-900">{item.quantity} units</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button 
+                        onClick={() => setSelectedItemForView(item)}
+                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
                       {canAction('update') && (
                         <button 
                           onClick={() => onStockOut(item, 1)}
                           className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          title="Stock Out"
                         >
                           <Minus className="w-4 h-4" />
                         </button>
@@ -151,6 +160,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                         <button 
                           onClick={() => deleteItem(item.id)}
                           className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Delete SKU"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -169,10 +179,10 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
           <div key={item.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-transform">
             <div className="flex justify-between items-start mb-3">
               <div className="flex gap-3 items-start">
-                <div className="p-2.5 bg-slate-50 rounded-xl text-slate-400 border border-slate-100">
+                <div className="p-2.5 bg-slate-50 rounded-xl text-slate-400 border border-slate-100" onClick={() => setSelectedItemForView(item)}>
                   <Box className="w-5 h-5" />
                 </div>
-                <div>
+                <div onClick={() => setSelectedItemForView(item)}>
                   <h4 className="text-sm font-bold text-slate-900 leading-tight">{item.name}</h4>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] font-mono text-slate-400 px-1.5 py-0.5 bg-slate-50 rounded border border-slate-100">
@@ -196,6 +206,12 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                 <span className="text-[8px] font-black text-slate-500 uppercase tracking-tighter truncate">{getCategoryName(item.categoryId)}</span>
               </div>
               <div className="flex gap-2">
+                <button 
+                  onClick={() => setSelectedItemForView(item)}
+                  className="bg-slate-50 text-slate-400 p-2 rounded-xl active:bg-slate-100"
+                >
+                  <Eye className="w-4 h-4" />
+                </button>
                 {canAction('update') && (
                   <button 
                     onClick={() => onStockOut(item, 1)}
@@ -224,6 +240,16 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
           setItems={setItems}
           warehouses={warehouses}
           categories={categories}
+        />
+      )}
+
+      {selectedItemForView && (
+        <ItemDetailsModal
+          item={selectedItemForView}
+          onClose={() => setSelectedItemForView(null)}
+          warehouse={warehouses.find(w => w.id === selectedItemForView.warehouseId)}
+          category={categories.find(c => c.id === selectedItemForView.categoryId)}
+          allCategories={categories}
         />
       )}
     </div>
