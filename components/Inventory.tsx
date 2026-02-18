@@ -5,6 +5,7 @@ import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Tras
 import AddItemModal from './AddItemModal';
 import ItemDetailsModal from './ItemDetailsModal';
 import EditItemModal from './EditItemModal';
+import StockActionModal from './StockActionModal';
 
 interface InventoryProps {
   items: Item[];
@@ -22,6 +23,12 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedItemForView, setSelectedItemForView] = useState<Item | null>(null);
   const [itemToEdit, setItemToEdit] = useState<Item | null>(null);
+  
+  // New state for quantitative adjustments
+  const [adjustmentState, setAdjustmentState] = useState<{
+    item: Item | null,
+    type: 'IN' | 'OUT' | null
+  }>({ item: null, type: null });
 
   const canAction = (action: 'update' | 'delete' | 'export') => 
     permissions.some(p => p.moduleId === 'inventory' && p.actions.includes(action));
@@ -60,6 +67,22 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
     setItemToEdit(null);
   };
 
+  const handleAdjustStock = (qty: number) => {
+    if (!adjustmentState.item || !adjustmentState.type) return;
+
+    if (adjustmentState.type === 'OUT') {
+      onStockOut(adjustmentState.item, qty);
+    } else {
+      // For stock IN, we directly update for now, or could create a different transaction type
+      setItems(prev => prev.map(i => 
+        i.id === adjustmentState.item?.id 
+          ? { ...i, quantity: i.quantity + qty, lastUpdated: new Date().toISOString() } 
+          : i
+      ));
+    }
+    setAdjustmentState({ item: null, type: null });
+  };
+
   return (
     <div className="space-y-4 md:space-y-6">
       <div className="flex justify-between items-center">
@@ -79,7 +102,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
               className="bg-indigo-600 text-white p-2.5 md:px-5 md:py-2.5 rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all flex items-center gap-2"
             >
               <Plus className="w-5 h-5 md:w-4 md:h-4" /> 
-              <span className="hidden md:inline">Add Item</span>
+              <span className="hidden md:inline">Add New SKU</span>
             </button>
           )}
         </div>
@@ -144,7 +167,12 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                   </td>
                   <td className="px-6 py-4 text-[10px] font-bold text-slate-600 uppercase tracking-tighter">{getCategoryName(item.categoryId)}</td>
                   <td className="px-6 py-4 text-sm text-slate-600">{getWarehouseName(item.warehouseId)}</td>
-                  <td className="px-6 py-4 font-bold text-slate-900">{item.quantity} units</td>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-slate-900">{item.quantity} units</span>
+                      <span className="text-[10px] text-slate-400 font-medium">₱{(item.quantity * item.trueUnitCost).toLocaleString()} total</span>
+                    </div>
+                  </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button 
@@ -164,8 +192,15 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                             <Edit3 className="w-4 h-4" />
                           </button>
                           <button 
-                            onClick={() => onStockOut(item, 1)}
-                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                            onClick={() => setAdjustmentState({ item, type: 'IN' })}
+                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="Stock In"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => setAdjustmentState({ item, type: 'OUT' })}
+                            className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                             title="Stock Out"
                           >
                             <Minus className="w-4 h-4" />
@@ -175,7 +210,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                       {canAction('delete') && (
                         <button 
                           onClick={() => deleteItem(item.id)}
-                          className="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                           title="Delete SKU"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -237,8 +272,14 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                       <Edit3 className="w-4 h-4" />
                     </button>
                     <button 
-                      onClick={() => onStockOut(item, 1)}
-                      className="bg-indigo-50 text-indigo-600 p-2 rounded-xl active:bg-indigo-100"
+                      onClick={() => setAdjustmentState({ item, type: 'IN' })}
+                      className="bg-emerald-50 text-emerald-600 p-2 rounded-xl active:bg-emerald-100"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                    <button 
+                      onClick={() => setAdjustmentState({ item, type: 'OUT' })}
+                      className="bg-rose-50 text-rose-500 p-2 rounded-xl active:bg-rose-100"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
@@ -284,6 +325,15 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
           onSave={handleUpdateItem}
           warehouses={warehouses}
           categories={categories}
+        />
+      )}
+
+      {adjustmentState.item && (
+        <StockActionModal
+          item={adjustmentState.item}
+          type={adjustmentState.type!}
+          onClose={() => setAdjustmentState({ item: null, type: null })}
+          onConfirm={handleAdjustStock}
         />
       )}
     </div>
