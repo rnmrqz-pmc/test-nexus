@@ -58,7 +58,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ categories, set
               <input 
                 type="text" 
                 placeholder="e.g. Mechanical" 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none text-slate-900 font-bold"
                 value={newCat.name}
                 onChange={e => setNewCat({...newCat, name: e.target.value})}
               />
@@ -69,7 +69,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ categories, set
                 type="text" 
                 maxLength={3}
                 placeholder="MEC" 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-mono uppercase focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-mono uppercase focus:ring-2 focus:ring-indigo-500/20 outline-none text-slate-900 font-bold"
                 value={newCat.code}
                 onChange={e => setNewCat({...newCat, code: e.target.value})}
               />
@@ -77,7 +77,7 @@ const CategoryManagement: React.FC<CategoryManagementProps> = ({ categories, set
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Parent Category</label>
               <select 
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none text-slate-900 font-bold"
                 value={newCat.parentId}
                 onChange={e => setNewCat({...newCat, parentId: e.target.value})}
               >

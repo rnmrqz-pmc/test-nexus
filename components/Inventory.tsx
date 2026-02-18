@@ -1,12 +1,13 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Item, Category, Warehouse, ItemStatus, UserRole, Permission } from '../types';
-import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye, Edit3, ArrowRightLeft } from 'lucide-react';
+import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye, Edit3, ArrowRightLeft, Check, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import AddItemModal from './AddItemModal';
 import ItemDetailsModal from './ItemDetailsModal';
 import EditItemModal from './EditItemModal';
 import StockActionModal from './StockActionModal';
 import TransferItemModal from './TransferItemModal';
+import BulkTransferModal from './BulkTransferModal';
 
 interface InventoryProps {
   items: Item[];
@@ -26,12 +27,19 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
   const [selectedItemForView, setSelectedItemForView] = useState<Item | null>(null);
   const [itemToEdit, setItemToEdit] = useState<Item | null>(null);
   const [itemToTransfer, setItemToTransfer] = useState<Item | null>(null);
+  const [isBulkTransferOpen, setIsBulkTransferOpen] = useState(false);
   
-  // New state for quantitative adjustments
-  const [adjustmentState, setAdjustmentState] = useState<{
-    item: Item | null,
-    type: 'IN' | 'OUT' | null
-  }>({ item: null, type: null });
+  // Selection State
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Reset pagination on filter change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory]);
 
   const canAction = (action: 'update' | 'delete' | 'export') => 
     permissions.some(p => p.moduleId === 'inventory' && p.actions.includes(action));
@@ -42,6 +50,17 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
     const matchesCategory = selectedCategory === 'all' || item.categoryId === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Calculate Pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+
+  const [adjustmentState, setAdjustmentState] = useState<{
+    item: Item | null,
+    type: 'IN' | 'OUT' | null
+  }>({ item: null, type: null });
 
   const getCategoryName = (id: string) => {
     const cat = categories.find(c => c.id === id);
@@ -62,7 +81,35 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
   const deleteItem = (id: string) => {
     if (confirm('Permanently delete SKU?')) {
       setItems(prev => prev.filter(i => i.id !== id));
+      const nextSelected = new Set(selectedIds);
+      nextSelected.delete(id);
+      setSelectedIds(nextSelected);
     }
+  };
+
+  const handleBulkDelete = () => {
+    if (confirm(`Delete ${selectedIds.size} selected items?`)) {
+      setItems(prev => prev.filter(i => !selectedIds.has(i.id)));
+      setSelectedIds(new Set());
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === currentItems.length && currentItems.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(currentItems.map(i => i.id)));
+    }
+  };
+
+  const toggleSelectRow = (id: string) => {
+    const nextSelected = new Set(selectedIds);
+    if (nextSelected.has(id)) {
+      nextSelected.delete(id);
+    } else {
+      nextSelected.add(id);
+    }
+    setSelectedIds(nextSelected);
   };
 
   const handleUpdateItem = (updatedItem: Item) => {
@@ -92,8 +139,17 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
     }
   };
 
+  const handleBulkRelocate = (targetWhId: string) => {
+    const itemsToMove = items.filter(i => selectedIds.has(i.id));
+    itemsToMove.forEach(item => {
+      onTransfer(item, targetWhId, item.quantity);
+    });
+    setIsBulkTransferOpen(false);
+    setSelectedIds(new Set());
+  };
+
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="space-y-4 md:space-y-6 relative pb-20">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl md:text-2xl font-black text-slate-900">Inventory</h2>
@@ -123,7 +179,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
           <input 
             type="text" 
             placeholder="Search by name or barcode..." 
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none text-slate-900 font-bold"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -152,6 +208,19 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50/50 border-b border-slate-100">
+                <th className="px-6 py-4 w-10">
+                  <div 
+                    onClick={toggleSelectAll}
+                    className={`w-5 h-5 rounded border-2 cursor-pointer flex items-center justify-center transition-all ${
+                      selectedIds.size > 0 && selectedIds.size === currentItems.length 
+                        ? 'bg-indigo-600 border-indigo-600' 
+                        : 'border-slate-300 bg-white hover:border-indigo-400'
+                    }`}
+                  >
+                    {selectedIds.size > 0 && selectedIds.size === currentItems.length && <Check className="w-3 h-3 text-white" />}
+                    {selectedIds.size > 0 && selectedIds.size < currentItems.length && <div className="w-2.5 h-0.5 bg-indigo-600 rounded-full" />}
+                  </div>
+                </th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Item</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Status</th>
                 <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase">Category</th>
@@ -161,8 +230,20 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filteredItems.map(item => (
-                <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+              {currentItems.map(item => (
+                <tr key={item.id} className={`hover:bg-slate-50/50 transition-colors group ${selectedIds.has(item.id) ? 'bg-indigo-50/30' : ''}`}>
+                  <td className="px-6 py-4">
+                    <div 
+                      onClick={() => toggleSelectRow(item.id)}
+                      className={`w-5 h-5 rounded border-2 cursor-pointer flex items-center justify-center transition-all ${
+                        selectedIds.has(item.id) 
+                          ? 'bg-indigo-600 border-indigo-600' 
+                          : 'border-slate-300 bg-white hover:border-indigo-400'
+                      }`}
+                    >
+                      {selectedIds.has(item.id) && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col">
                       <span className="text-sm font-bold text-slate-900">{item.name}</span>
@@ -239,15 +320,77 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination UI */}
+        <div className="px-6 py-4 border-t border-slate-50 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/30">
+          <div className="flex items-center gap-4">
+            <p className="text-xs font-bold text-slate-500">
+              Showing <span className="text-slate-900">{indexOfFirstItem + 1}</span> to <span className="text-slate-900">{Math.min(indexOfLastItem, filteredItems.length)}</span> of <span className="text-slate-900">{filteredItems.length}</span> SKUs
+            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Rows per page:</span>
+              <select 
+                className="bg-transparent text-xs font-bold text-slate-900 outline-none cursor-pointer"
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+              >
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:bg-white hover:text-indigo-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button 
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${
+                  currentPage === page 
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
+                    : 'text-slate-500 hover:bg-white border border-transparent hover:border-slate-200'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg border border-slate-200 text-slate-400 hover:bg-white hover:text-indigo-600 disabled:opacity-30 disabled:hover:bg-transparent transition-all"
+            >
+              <ChevronRightIcon className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="md:hidden space-y-3">
-        {filteredItems.map(item => (
-          <div key={item.id} className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm active:scale-[0.98] transition-transform">
+        {currentItems.map(item => (
+          <div key={item.id} className={`bg-white p-4 rounded-2xl border transition-all ${selectedIds.has(item.id) ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-100'}`}>
             <div className="flex justify-between items-start mb-3">
               <div className="flex gap-3 items-start">
-                <div className="p-2.5 bg-slate-50 rounded-xl text-slate-400 border border-slate-100" onClick={() => setSelectedItemForView(item)}>
-                  <Box className="w-5 h-5" />
+                <div 
+                  onClick={() => toggleSelectRow(item.id)}
+                  className={`w-5 h-5 mt-1 rounded border-2 cursor-pointer flex items-center justify-center transition-all ${
+                    selectedIds.has(item.id) 
+                      ? 'bg-indigo-600 border-indigo-600' 
+                      : 'border-slate-300 bg-white'
+                  }`}
+                >
+                  {selectedIds.has(item.id) && <Check className="w-3 h-3 text-white" />}
                 </div>
                 <div onClick={() => setSelectedItemForView(item)}>
                   <h4 className="text-sm font-bold text-slate-900 leading-tight">{item.name}</h4>
@@ -321,6 +464,39 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         ))}
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-20 md:bottom-10 left-1/2 -translate-x-1/2 z-[80] animate-in slide-in-from-bottom-10 duration-500">
+          <div className="bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6 border border-white/10 backdrop-blur-md">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Selected Assets</span>
+              <span className="text-sm font-black">{selectedIds.size} SKUs</span>
+            </div>
+            <div className="h-8 w-px bg-white/10" />
+            <div className="flex gap-2">
+              <button 
+                onClick={handleBulkDelete}
+                className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 text-rose-500 hover:bg-rose-500 hover:text-white rounded-xl text-xs font-bold transition-all"
+              >
+                <Trash2 className="w-4 h-4" /> Delete Selected
+              </button>
+              <button 
+                onClick={() => setIsBulkTransferOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-500 rounded-xl text-xs font-bold transition-all"
+              >
+                <ArrowRightLeft className="w-4 h-4" /> Bulk Relocate
+              </button>
+              <button 
+                onClick={() => setSelectedIds(new Set())}
+                className="px-4 py-2 text-slate-400 hover:text-white text-xs font-bold transition-all"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isAddModalOpen && (
         <AddItemModal 
           onClose={() => setIsAddModalOpen(false)}
@@ -356,6 +532,15 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
           warehouses={warehouses}
           onClose={() => setItemToTransfer(null)}
           onConfirm={handleConfirmTransfer}
+        />
+      )}
+
+      {isBulkTransferOpen && (
+        <BulkTransferModal
+          selectedItems={items.filter(i => selectedIds.has(i.id))}
+          warehouses={warehouses}
+          onClose={() => setIsBulkTransferOpen(false)}
+          onConfirm={handleBulkRelocate}
         />
       )}
 

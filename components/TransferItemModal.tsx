@@ -78,7 +78,7 @@ const TransferItemModal: React.FC<TransferItemModalProps> = ({ item, warehouses,
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Destination Warehouse</label>
                 <select 
                   required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
                   value={targetWhId}
                   onChange={e => {
                     setTargetWhId(e.target.value);

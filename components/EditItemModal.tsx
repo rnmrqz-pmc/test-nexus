@@ -78,21 +78,21 @@ const EditItemModal: React.FC<EditItemModalProps> = ({ item, onClose, onSave, wa
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Item Details</label>
-                <input required type="text" placeholder="Name" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold text-slate-700" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                <input required type="text" placeholder="Name" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold text-slate-900" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Quantity in Stock</label>
-                <input required type="number" min="1" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold text-slate-700" value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 0})} />
+                <input required type="number" min="1" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold text-slate-900" value={formData.quantity} onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 0})} />
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Active Warehouse</label>
-                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold text-slate-700" value={formData.warehouseId} onChange={e => setFormData({...formData, warehouseId: e.target.value})}>
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold text-slate-900" value={formData.warehouseId} onChange={e => setFormData({...formData, warehouseId: e.target.value})}>
                   {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Taxonomy Node</label>
-                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold text-slate-700" value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})}>
+                <select className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none font-bold text-slate-900" value={formData.categoryId} onChange={e => setFormData({...formData, categoryId: e.target.value})}>
                   {categories.map(c => {
                     const parent = categories.find(p => p.id === c.parentId);
                     return (
@@ -169,7 +169,7 @@ const CostField = ({ label, icon, value, onChange }: { label: string, icon: Reac
     </div>
     <div className="relative">
       <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[10px]">₱</span>
-      <input type="number" className="w-full bg-white border border-slate-200 rounded-xl pl-5 pr-2 py-3 text-xs focus:ring-1 focus:ring-indigo-500 outline-none font-bold text-slate-700" value={value} onChange={e => onChange(parseFloat(e.target.value) || 0)} />
+      <input type="number" className="w-full bg-white border border-slate-200 rounded-xl pl-5 pr-2 py-3 text-xs focus:ring-1 focus:ring-indigo-500 outline-none font-bold text-slate-900" value={value} onChange={e => onChange(parseFloat(e.target.value) || 0)} />
     </div>
   </div>
 );

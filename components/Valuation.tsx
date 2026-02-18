@@ -77,7 +77,7 @@ const Valuation: React.FC<ValuationProps> = ({ items, setItems, warehouses, cate
                 <input 
                   required
                   type="text" 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none text-slate-900 font-bold"
                   value={formData.name}
                   onChange={e => setFormData({...formData, name: e.target.value})}
                 />
@@ -89,7 +89,7 @@ const Valuation: React.FC<ValuationProps> = ({ items, setItems, warehouses, cate
                   required
                   type="number" 
                   min="1"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none text-slate-900 font-bold"
                   value={formData.quantity}
                   onChange={e => setFormData({...formData, quantity: parseInt(e.target.value) || 0})}
                 />
@@ -98,7 +98,7 @@ const Valuation: React.FC<ValuationProps> = ({ items, setItems, warehouses, cate
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Warehouse</label>
                 <select 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none text-slate-900 font-bold"
                   value={formData.warehouseId}
                   onChange={e => setFormData({...formData, warehouseId: e.target.value})}
                 >
@@ -109,7 +109,7 @@ const Valuation: React.FC<ValuationProps> = ({ items, setItems, warehouses, cate
               <div className="space-y-2">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Category</label>
                 <select 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none text-slate-900 font-bold"
                   value={formData.categoryId}
                   onChange={e => setFormData({...formData, categoryId: e.target.value})}
                 >
@@ -182,7 +182,7 @@ const CostInput = ({ label, icon, value, onChange }: { label: string, icon: Reac
       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₱</span>
       <input 
         type="number" 
-        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-2 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none font-bold"
+        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-6 pr-2 py-2 text-sm focus:ring-1 focus:ring-indigo-500 outline-none text-slate-900 font-bold"
         value={value}
         onChange={e => onChange(parseFloat(e.target.value) || 0)}
       />

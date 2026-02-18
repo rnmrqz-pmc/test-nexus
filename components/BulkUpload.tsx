@@ -109,7 +109,7 @@ const BulkUpload: React.FC<BulkUploadProps> = ({ warehouses, categories, setItem
                   <MapPin className="w-3 h-3" /> Target Warehouse
                 </label>
                 <select 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
                   value={selectedWarehouseId}
                   onChange={e => setSelectedWarehouseId(e.target.value)}
                 >
@@ -122,7 +122,7 @@ const BulkUpload: React.FC<BulkUploadProps> = ({ warehouses, categories, setItem
                   <Layers className="w-3 h-3" /> Common Category
                 </label>
                 <select 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all"
                   value={selectedCategoryId}
                   onChange={e => setSelectedCategoryId(e.target.value)}
                 >
@@ -185,7 +185,7 @@ const BulkUpload: React.FC<BulkUploadProps> = ({ warehouses, categories, setItem
                       <input 
                         type="text" 
                         placeholder="Item Name (e.g. Copper Pipe 2m)" 
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all text-slate-900 font-bold"
                         value={item.name}
                         onChange={e => updateRow(item.id, 'name', e.target.value)}
                       />
@@ -194,7 +194,7 @@ const BulkUpload: React.FC<BulkUploadProps> = ({ warehouses, categories, setItem
                        <input 
                         type="number" 
                         placeholder="Qty" 
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all text-center"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all text-center text-slate-900 font-bold"
                         value={item.quantity}
                         onChange={e => updateRow(item.id, 'quantity', parseInt(e.target.value) || 0)}
                       />
@@ -205,7 +205,7 @@ const BulkUpload: React.FC<BulkUploadProps> = ({ warehouses, categories, setItem
                         <input 
                           type="number" 
                           placeholder="Price" 
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-3 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-6 pr-3 py-2.5 text-xs focus:ring-2 focus:ring-indigo-500/10 outline-none transition-all text-slate-900 font-bold"
                           value={item.price}
                           onChange={e => updateRow(item.id, 'price', parseFloat(e.target.value) || 0)}
                         />
