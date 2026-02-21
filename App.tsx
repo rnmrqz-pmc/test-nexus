@@ -386,7 +386,17 @@ const App: React.FC = () => {
     }
 
     switch (activeTab) {
-      case 'dashboard':    return <Dashboard items={items} warehouses={warehouses} transactions={transactions} />;
+      // case 'dashboard':    return <Dashboard items={items} warehouses={warehouses} transactions={transactions} />;
+      case 'dashboard': return (
+        <Dashboard
+          items={items}
+          warehouses={warehouses}
+          transactions={transactions}
+          onApprove={handleApproveTransaction}
+          onReject={handleRejectTransaction}
+          onViewAll={() => setActiveTab('approvals')}
+        />
+      );
       case 'inventory':    return <Inventory items={items} setItems={setItems} categories={categories} warehouses={warehouses} onStockIn={handleStockInRequest} onStockOut={handleStockOutRequest} onTransfer={handleTransferRequest} role={role} permissions={permissions[role]} />;
       case 'warehouses':   return <WarehouseManager warehouses={warehouses} setWarehouses={setWarehouses} role={role} />;
       case 'approvals':    return <Approvals transactions={transactions} items={items} warehouses={warehouses} onApprove={handleApproveTransaction} onReject={handleRejectTransaction} role={role} />;
@@ -404,7 +414,7 @@ const App: React.FC = () => {
   return (
     <>
       {/* Offline / syncing banner — sits above everything */}
-      <OfflineBanner isOnline={isOnline} isSyncing={isSyncing} pendingCount={pendingCount} />
+      {!isOnline && <OfflineBanner isOnline={isOnline} isSyncing={isSyncing} pendingCount={pendingCount} />}
 
       <div className="flex flex-col md:flex-row min-h-screen bg-slate-50 overflow-hidden">
         <Sidebar

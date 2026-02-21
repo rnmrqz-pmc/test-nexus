@@ -9,6 +9,8 @@ interface DashboardProps {
   transactions: Transaction[];
   onApprove?: (txId: string) => void;
   onReject?: (txId: string, reason: string) => void;
+  onViewAll?: () => void;
+
 }
 
 const REJECTION_REASONS = [
@@ -20,7 +22,8 @@ const REJECTION_REASONS = [
   'Other / Custom Reason',
 ];
 
-const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, onApprove, onReject }) => {
+const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, onApprove, onReject, onViewAll }) => {
+  console.log("items", items.filter(i => i.status === ItemStatus.OLD_USED));  
   const [selectedWarehouse, setSelectedWarehouse] = useState<{ id: string; name: string; color: string } | null>(null);
   const [rejectingTx, setRejectingTx] = useState<Transaction | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
@@ -71,27 +74,29 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
   const WH_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
   return (
-    <div className="space-y-4 md:space-y-6">
+    <div className="">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-xl md:text-2xl font-black text-slate-900">Analytics</h2>
+          <h2 className="text-xl md:text-2xl font-black text-slate-900">Dashboard Analytics</h2>
           <p className="text-xs md:text-sm text-slate-500">Live operational metrics</p>
         </div>
-        <button className="bg-white p-2 md:px-4 md:py-2 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 shadow-sm">
+        {/* <button className="bg-white p-2 md:px-4 md:py-2 border border-slate-200 rounded-xl text-xs font-bold hover:bg-slate-50 shadow-sm">
           <TrendingUp className="w-4 h-4 inline md:mr-2" /> <span className="hidden md:inline">Growth</span>
-        </button>
+        </button> */}
       </div>
 
       {/* Summary Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-        <StatCard title="Value" value={`₱${(totalValue/1000).toFixed(1)}k`} trend="+12%" icon={<DollarSign />} color="indigo" />
-        <StatCard title="Aging" value={`₱${(oldStockValue/1000).toFixed(1)}k`} trend="-2%" icon={<AlertTriangle />} color="rose" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 my-4">
+        <StatCard title="Total Value" 
+          value={`₱ ${ totalValue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} 
+          trend="" icon={<DollarSign />} color="indigo" />
+        <StatCard title="Aging" value={`₱${(oldStockValue/1000).toFixed(1)}k`} trend="" icon={<AlertTriangle />} color="rose" />
         <StatCard title="Low Stock" value={lowStockItems.length.toString()} trend="Reorder" icon={<AlertTriangle />} color="amber" />
         <StatCard title="For Approval" value={pendingTxs.length.toString()} trend={pendingTxs.length > 0 ? 'Action needed' : 'All clear'} icon={<Clock />} color={pendingTxs.length > 0 ? 'rose' : 'emerald'} />
       </div>
 
       {/* Pending Approvals */}
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden my-4">
         <div className="flex items-center justify-between px-5 md:px-6 pt-5 md:pt-6 pb-4 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-xl bg-amber-50 flex items-center justify-center">
@@ -99,24 +104,29 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
             </div>
             <div>
               <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Pending Approvals</h3>
-              <p className="text-[10px] text-slate-400 font-semibold">Requests awaiting your action</p>
+              <p className="text-[12px] text-slate-400 f">Requests awaiting your action</p>
             </div>
           </div>
-          {pendingTxs.length > 0 && (
-            <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-amber-100 text-amber-700">
-              {pendingTxs.length} pending
-            </span>
+          {pendingTxs.length > 5 && (
+            <div className="px-5 md:px-6 py-1 border-t border-slate-100 bg-slate-50">
+              <button
+                onClick={onViewAll}
+                className="w-full text-[10px] font-black text-indigo-500 hover:text-indigo-700 uppercase tracking-widest transition-colors"
+              >
+                View all {pendingTxs.length} pending requests →
+              </button>
+            </div>
           )}
         </div>
 
         {pendingTxs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-slate-400">
             <CheckCircle2 className="w-8 h-8 mb-2 text-emerald-300" />
-            <p className="text-xs font-bold">All caught up — no pending requests</p>
+            <p className="text-sm font-bold">All caught up — no pending requests</p>
           </div>
         ) : (
           <div className="divide-y divide-slate-50">
-            {pendingTxs.map(tx => {
+            {pendingTxs.slice(0, 5).map(tx => {
               const isTransfer = tx.type === 'TRANSFER';
               const isStockOut = tx.type === 'STOCK_OUT';
               const typeColors: Record<string, string> = {
@@ -132,25 +142,28 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
               return (
                 <div key={tx.id} className="flex items-center gap-3 px-5 md:px-6 py-3.5 hover:bg-slate-50 transition-colors">
                   {/* Type badge */}
-                  <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0 ${typeColors[tx.type] ?? 'bg-slate-100 text-slate-600'}`}>
-                    {tx.type.replace('_', ' ')}
-                  </span>
+                  <div className='w-[80px]'>
+                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider  ${typeColors[tx.type] ?? 'bg-slate-100 text-slate-600'}`}>
+                      {tx.type.replace('_', ' ')}
+                    </span>
+                  </div>
+                 
 
                   {/* Item + location */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-black text-slate-800 truncate">{getItemName(tx.itemId)}</p>
+                    <p className="text-sm font-black text-slate-800 truncate">{getItemName(tx.itemId)}</p>
                     <div className="flex items-center gap-1 mt-0.5">
                       {isTransfer ? (
                         <>
                           <MapPin className="w-2.5 h-2.5 text-slate-300 shrink-0" />
-                          <span className="text-[9px] text-slate-400 font-semibold truncate">{getWarehouseName(tx.warehouseId)}</span>
-                          <ArrowRight className="w-2.5 h-2.5 text-slate-300 shrink-0" />
-                          <span className="text-[9px] text-indigo-500 font-bold truncate">{getWarehouseName(tx.targetWarehouseId)}</span>
+                          <span className="text-[12px] text-slate-500 truncate">{getWarehouseName(tx.warehouseId)}</span>
+                          <ArrowRight className="w-2.5 h-2.5 text-slate-600 shrink-0" />
+                          <span className="text-[12px] text-indigo-500 font-bold truncate">{getWarehouseName(tx.targetWarehouseId)}</span>
                         </>
                       ) : (
                         <>
                           <MapPin className="w-2.5 h-2.5 text-slate-300 shrink-0" />
-                          <span className="text-[9px] text-slate-400 font-semibold truncate">{getWarehouseName(tx.warehouseId)}</span>
+                          <span className="text-[12px] text-slate-500 truncate">{getWarehouseName(tx.warehouseId)}</span>
                         </>
                       )}
                     </div>
@@ -158,8 +171,8 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
 
                   {/* Staff + date */}
                   <div className="hidden md:flex flex-col items-end shrink-0">
-                    <span className="text-[9px] font-bold text-slate-500 flex items-center gap-1"><User className="w-2.5 h-2.5" />{tx.staffName}</span>
-                    <span className="text-[9px] text-slate-400">{new Date(tx.timestamp).toLocaleDateString()}</span>
+                    <span className="text-[14px] font-bold text-slate-500 flex items-center gap-1"><User className="w-3.5 h-3.5" />{tx.staffName}</span>
+                    <span className="text-[13px] text-slate-400">{new Date(tx.timestamp).toLocaleDateString()}</span>
                   </div>
 
                   {/* Quantity pill */}
@@ -194,13 +207,13 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
       </div>
 
       {/* Warehouse Inventory Value Breakdown */}
-      <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
-        <h3 className="text-sm font-black text-slate-800 mb-1 flex items-center gap-2 uppercase tracking-widest">
+      <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100 my-4">
+        <h3 className="text-sm font-black text-slate-800 mb-1 flex items-center gap-2 uppercase tracking-widest mb-4">
           <WarehouseIcon className="w-4 h-4 text-indigo-500" /> Inventory Value by Warehouse
         </h3>
-        <p className="text-[10px] text-slate-400 font-semibold mb-5 uppercase tracking-wider">
+        {/* <p className="text-[10px] text-slate-400 font-semibold mb-5 uppercase tracking-wider">
           Total: ₱{totalValue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-        </p>
+        </p> */}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {warehouseStats.map((wh, i) => (
@@ -220,15 +233,16 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
               />
 
               <div className="relative z-10 flex items-start justify-between mb-3">
-                <div
+                {/* <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-white"
                   style={{ backgroundColor: WH_COLORS[i % WH_COLORS.length] }}
                 >
                   <WarehouseIcon className="w-3.5 h-3.5" />
-                </div>
+                </div> */}
+                <p className="text-[12px] font-black text-slate-700 uppercase tracking-widest mb-0.5 truncate">{wh.name}</p>
                 <div className="flex items-center gap-1.5">
                   <span
-                    className="text-[9px] font-black px-2 py-0.5 rounded-full"
+                    className="text-[10px] font-black px-2 py-0.5 rounded-full"
                     style={{
                       backgroundColor: `${WH_COLORS[i % WH_COLORS.length]}18`,
                       color: WH_COLORS[i % WH_COLORS.length],
@@ -238,7 +252,7 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
                   </span>
                   <button
                     onClick={() => setSelectedWarehouse({ id: wh.id, name: wh.name, color: WH_COLORS[i % WH_COLORS.length] })}
-                    className="flex items-center gap-1 text-[9px] font-black px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-400 transition-colors shadow-sm"
+                    className="flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-400 transition-colors shadow-sm"
                   >
                     <Eye className="w-2.5 h-2.5" /> View
                   </button>
@@ -246,20 +260,20 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
               </div>
 
               <div className="relative z-10">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 truncate">{wh.name}</p>
+                {/* <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5 truncate">{wh.name}</p> */}
                 <p className="text-lg font-black text-slate-900">
                   ₱{wh.value.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <div className="flex items-center justify-between mt-1">
-                  <p className="text-[9px] text-slate-400 font-bold">{wh.itemCount} SKU{wh.itemCount !== 1 ? 's' : ''}</p>
+                  <p className="text-[12px] text-slate-400 font-bold">{wh.itemCount} SKU{wh.itemCount !== 1 ? 's' : ''}</p>
                   {wh.lowStock > 0 && (
-                    <span className="flex items-center gap-1 text-[9px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">
+                    <span className="flex items-center gap-1 text-[10px] font-black text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">
                       <AlertTriangle className="w-2.5 h-2.5" />
                       {wh.lowStock} low
                     </span>
                   )}
                   {wh.lowStock === 0 && (
-                    <span className="text-[9px] font-black text-emerald-500">✓ Stocked</span>
+                    <span className="text-[10px] font-black text-emerald-500">Stocked</span>
                   )}
                 </div>
               </div>
@@ -275,7 +289,7 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 mb-4">
         <div className="bg-white p-5 md:p-6 rounded-2xl shadow-sm border border-slate-100">
           <h3 className="text-sm font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
             <WarehouseIcon className="w-4 h-4 text-indigo-500" /> Hub Distribution
@@ -448,7 +462,7 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedWarehouse(null)}>
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
             <div
-              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden"
+              className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
@@ -458,15 +472,15 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
                     <WarehouseIcon className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-slate-900">{selectedWarehouse.name}</h3>
-                    <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-widest">{whItems.length} item{whItems.length !== 1 ? 's' : ''}</p>
+                    <h3 className="font-black text-slate-900">{selectedWarehouse.name}</h3>
+                    <p className="text-[12px] text-slate-400 font-semibold uppercase tracking-widest">{whItems.length} item{whItems.length !== 1 ? 's' : ''}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedWarehouse(null)}
-                  className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
+                  className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center transition-colors"
                 >
-                  <X className="w-3.5 h-3.5 text-slate-500" />
+                  <X className="w-5 h-5 text-slate-500" />
                 </button>
               </div>
 
@@ -481,10 +495,10 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
                   <table className="w-full text-left">
                     <thead className="sticky top-0 bg-slate-50 border-b border-slate-100">
                       <tr>
-                        <th className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-5 py-3">Item</th>
-                        <th className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 py-3">Status</th>
-                        <th className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-3 py-3 text-right">Qty</th>
-                        <th className="text-[9px] font-black text-slate-400 uppercase tracking-widest px-5 py-3 text-right">Value</th>
+                        <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-5 py-3">Item</th>
+                        <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-3">Status</th>
+                        <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-3 py-3 text-right">Qty</th>
+                        <th className="text-[10px] font-black text-slate-400 uppercase tracking-widest px-5 py-3 text-right">Value</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
@@ -505,22 +519,22 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
                         return (
                           <tr key={item.id} className="hover:bg-slate-50 transition-colors">
                             <td className="px-5 py-3">
-                              <p className="text-xs font-black text-slate-800">{item.name}</p>
-                              <p className="text-[9px] text-slate-400 font-semibold">₱{item.trueUnitCost.toLocaleString('en-PH', { minimumFractionDigits: 2 })} / unit</p>
+                              <p className="text-sm font-black text-slate-800">{item.name}</p>
+                              <p className="text-[11px] text-slate-400 font-semibold">₱{item.trueUnitCost.toLocaleString('en-PH', { minimumFractionDigits: 2 })} / unit</p>
                             </td>
                             <td className="px-3 py-3">
-                              <span className={`text-[9px] font-black px-2 py-0.5 rounded-full ${statusColors[item.status] ?? 'bg-slate-100 text-slate-500'}`}>
+                              <span className={`text-[11px] font-black px-2 py-0.5 rounded-full ${statusColors[item.status] ?? 'bg-slate-100 text-slate-500'}`}>
                                 {statusLabels[item.status] ?? item.status}
                               </span>
                             </td>
                             <td className="px-3 py-3 text-right">
-                              <span className={`text-xs font-black ${isLow ? 'text-amber-500' : 'text-slate-800'}`}>
+                              <span className={`text-sm font-black ${isLow ? 'text-amber-500' : 'text-slate-800'}`}>
                                 {item.quantity}
                               </span>
                               {isLow && <AlertTriangle className="w-3 h-3 text-amber-400 inline ml-1" />}
                             </td>
                             <td className="px-5 py-3 text-right">
-                              <span className="text-xs font-black text-slate-800">
+                              <span className="text-sm font-black text-slate-800">
                                 ₱{(item.trueUnitCost * item.quantity).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                               </span>
                             </td>
@@ -534,7 +548,7 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
 
               {/* Footer total */}
               <div className="border-t border-slate-100 px-5 py-3 flex items-center justify-between bg-slate-50">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Total Value</span>
+                <span className="text-[12px] text-slate-400 font-bold uppercase tracking-widest">Total Value</span>
                 <span className="text-sm font-black text-slate-900">
                   ₱{whItems.reduce((s, i) => s + i.trueUnitCost * i.quantity, 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
                 </span>
@@ -550,14 +564,16 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
 const StatCard = ({ title, value, trend, icon, color }: any) => {
   const colors: any = { indigo: 'bg-indigo-50 text-indigo-600', rose: 'bg-rose-50 text-rose-600', emerald: 'bg-emerald-50 text-emerald-600', amber: 'bg-amber-50 text-amber-600' };
   return (
-    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-      <div className={`w-8 h-8 rounded-xl ${colors[color]} flex items-center justify-center mb-3`}>
-        {React.cloneElement(icon, { className: 'w-4 h-4' })}
+    <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-300">
+      <div className="flex items-center mb-2">
+        <div className={`w-8 h-8 rounded-xl ${colors[color]} flex items-center justify-center transition-colors duration-300`}>
+          {React.cloneElement(icon, { className: 'w-4 h-4' })}
+        </div>
+        <p className="px-2 text-[12px] font-black text-slate-500 uppercase tracking-widest mb-0.5 transition-colors duration-300">{title}</p>
       </div>
-      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-0.5">{title}</p>
       <div className="flex items-baseline gap-2">
-        <span className="text-lg md:text-xl font-black text-slate-900">{value}</span>
-        <span className="text-[8px] font-black text-emerald-500">{trend}</span>
+        <span className="text-lg md:text-xl font-black text-slate-900 transition-colors duration-300">{value}</span>
+        <span className="text-[11px] font-black text-emerald-500 transition-colors duration-300">{trend}</span>
       </div>
     </div>
   );

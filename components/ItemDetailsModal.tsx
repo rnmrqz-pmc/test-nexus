@@ -1,8 +1,10 @@
-
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Item, Warehouse, Category, ItemStatus } from '../types';
-// Added Info icon to the import list
-import { X, Box, MapPin, Layers, Calendar, DollarSign, Package, Truck, ShieldAlert, ReceiptText, TrendingUp, ChevronLeft, Info } from 'lucide-react';
+import {
+  X, MapPin, Layers, Calendar, Package,
+  Truck, ShieldAlert, ReceiptText, TrendingUp,
+  Info, Zap
+} from 'lucide-react';
 
 interface ItemDetailsModalProps {
   item: Item;
@@ -12,7 +14,21 @@ interface ItemDetailsModalProps {
   allCategories: Category[];
 }
 
-const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({ item, onClose, warehouse, category, allCategories }) => {
+const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
+  item, onClose, warehouse, category, allCategories
+}) => {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 320);
+  };
+
   const getFullCategoryPath = (catId?: string) => {
     if (!catId) return 'N/A';
     const cat = allCategories.find(c => c.id === catId);
@@ -21,138 +37,236 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({ item, onClose, ware
     return parent ? `${parent.name} › ${cat.name}` : cat.name;
   };
 
-  const statusColors = {
-    [ItemStatus.RAW]: 'bg-slate-100 text-slate-700',
-    [ItemStatus.FINISHED]: 'bg-indigo-100 text-indigo-700',
-    [ItemStatus.GOOD_AS_NEW]: 'bg-emerald-100 text-emerald-700',
-    [ItemStatus.OLD_USED]: 'bg-amber-100 text-amber-700 ring-1 ring-amber-500/20',
+  const statusConfig: Record<ItemStatus, { label: string; pill: string; dot: string }> = {
+    [ItemStatus.RAW]:         { label: 'Raw',         pill: 'bg-slate-100 text-slate-500 ring-1 ring-slate-200',      dot: 'bg-slate-400'   },
+    [ItemStatus.FINISHED]:    { label: 'Finished',    pill: 'bg-violet-50 text-violet-600 ring-1 ring-violet-200',    dot: 'bg-violet-500'  },
+    [ItemStatus.GOOD_AS_NEW]: { label: 'Good as New', pill: 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200', dot: 'bg-emerald-500' },
+    [ItemStatus.OLD_USED]:    { label: 'Old / Used',  pill: 'bg-amber-50 text-amber-600 ring-1 ring-amber-200',       dot: 'bg-amber-400'   },
   };
 
-  const costItems = [
-    { label: 'Base Cost', value: item.baseCost, icon: Package, color: 'text-slate-600' },
-    { label: 'Freight', value: item.freight, icon: Truck, color: 'text-indigo-600' },
-    { label: 'Duties', value: item.duties, icon: ShieldAlert, color: 'text-rose-600' },
-    { label: 'Taxes', value: item.taxes, icon: ReceiptText, color: 'text-emerald-600' },
+  const st = statusConfig[item.status];
+
+  /**
+   * COST COMPUTATIONS
+   * ─────────────────────────────────────────────────────────────────────────
+   * trueUnitCost  = per-unit landed cost = sum of all per-unit cost components
+   *                 (baseCost + freight + duties + taxes)
+   *
+   * totalInventoryValue = trueUnitCost × quantity
+   *                       = total capitalized value of all units on hand
+   */
+  const trueUnitCost       = item.baseCost + item.freight + item.duties + item.taxes;
+  const totalInventoryValue = trueUnitCost * item.quantity;
+
+  const costBreakdown = [
+    { label: 'Base Cost', value: item.baseCost, icon: Package,     bar: 'bg-violet-400' },
+    { label: 'Freight',   value: item.freight,  icon: Truck,       bar: 'bg-sky-400'    },
+    { label: 'Duties',    value: item.duties,   icon: ShieldAlert, bar: 'bg-rose-400'   },
+    { label: 'Taxes',     value: item.taxes,    icon: ReceiptText, bar: 'bg-emerald-400'},
   ];
 
   return (
-    <div className="fixed inset-0 z-[110] flex flex-col md:items-center md:justify-center">
-      <div className="hidden md:block absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={onClose} />
-      
-      <div className="flex-1 md:flex-initial w-full md:max-w-2xl bg-white md:rounded-[2.5rem] shadow-2xl relative overflow-y-auto animate-in slide-in-from-bottom-full md:fade-in md:zoom-in duration-300">
-        {/* Header */}
-        <div className="p-6 md:p-10 border-b border-slate-50 sticky top-0 bg-white/80 backdrop-blur-md z-10">
-          <div className="flex items-center justify-between mb-2">
-             <button onClick={onClose} className="md:hidden p-2 -ml-4 text-slate-400">
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-            <div className="bg-indigo-600 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-200">
-              <Box className="w-6 h-6" />
+    <div
+      onClick={handleClose}
+      className={`
+        fixed inset-0 z-[110] flex items-end md:items-center md:justify-center
+        transition-all duration-300
+        ${visible
+          ? 'bg-stone-900/40 backdrop-blur-sm'
+          : 'bg-transparent backdrop-blur-none pointer-events-none'}
+      `}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className={`
+          relative w-full md:max-w-3xl
+          bg-stone-50 border border-stone-200 shadow-2xl
+          rounded-t-[2rem] md:rounded-[2rem]
+          max-h-[92dvh] overflow-y-auto
+          transition-all duration-300 ease-out
+          ${visible
+            ? 'translate-y-0 opacity-100 md:scale-100'
+            : 'translate-y-full opacity-0 md:translate-y-4 md:scale-[0.97]'}
+        `}
+        style={{ scrollbarWidth: 'none' }}
+      >
+
+        {/* ── Sticky Header ── */}
+        <div className="sticky top-0 z-10 bg-stone-50/90 backdrop-blur-md border-b border-stone-200 px-6 py-4 flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-1.5 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-mono text-[11px] text-stone-400 bg-stone-100 border border-stone-200 px-2 py-0.5 rounded-md tracking-wide">
+                {item.barcode}
+              </span>
+              <span className={`inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest px-2.5 py-1 rounded-full ${st.pill}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
+                {st.label}
+              </span>
             </div>
-            <button onClick={onClose} className="hidden md:block p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors">
-              <X className="w-6 h-6" />
-            </button>
+            <h2 className="text-lg font-black text-stone-900 leading-snug tracking-tight truncate">
+              {item.name}
+            </h2>
           </div>
-          <h2 className="text-2xl md:text-3xl font-black text-slate-900 leading-tight">{item.name}</h2>
-          <div className="flex items-center gap-3 mt-2">
-            <span className="text-xs font-mono text-slate-400 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-              {item.barcode}
-            </span>
-            <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${statusColors[item.status]}`}>
-              {item.status.replace('_', ' ')}
-            </span>
-          </div>
+
+          <button
+            onClick={handleClose}
+            className="shrink-0 w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-400 hover:text-stone-700 flex items-center justify-center transition-colors"
+          >
+            <X size={15} />
+          </button>
         </div>
 
-        <div className="p-6 md:p-10 space-y-10">
-          {/* Quick Stats Grid */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-              <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <MapPin className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Location</span>
-              </div>
-              <p className="text-sm font-bold text-slate-900">{warehouse?.name || 'Unknown Hub'}</p>
-            </div>
-            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-              <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <Layers className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Category</span>
-              </div>
-              <p className="text-sm font-bold text-slate-900">{getFullCategoryPath(item.categoryId)}</p>
-            </div>
-            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-              <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <Package className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Stock Level</span>
-              </div>
-              <p className="text-sm font-bold text-slate-900">{item.quantity} Units</p>
-            </div>
-            <div className="bg-slate-50 p-5 rounded-3xl border border-slate-100">
-              <div className="flex items-center gap-2 text-slate-400 mb-2">
-                <Calendar className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Last Entry</span>
-              </div>
-              <p className="text-sm font-bold text-slate-900">{new Date(item.lastUpdated).toLocaleDateString()}</p>
-            </div>
-          </div>
+        {/* ── Body ── */}
+        <div className="p-6 md:p-8 space-y-8">
 
-          {/* Landed Cost breakdown */}
-          <div className="space-y-4">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-1 flex items-center gap-2">
-              <DollarSign className="w-3 h-3" /> Financial Valuation
-            </h3>
-            
-            <div className="bg-slate-900 rounded-[2.5rem] p-8 text-white relative overflow-hidden">
-               <div className="absolute top-0 right-0 opacity-10 translate-x-1/4 -translate-y-1/4">
-                <TrendingUp className="w-48 h-48" />
-              </div>
-              
-              <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                  <p className="text-indigo-300 text-[10px] font-black uppercase tracking-widest mb-1">True Unit Cost (Landed)</p>
-                  <h4 className="text-5xl font-black">₱{item.trueUnitCost.toFixed(2)}</h4>
-                  <p className="text-slate-400 text-xs mt-3 max-w-[200px] font-medium">Calculated total acquisition cost per individual unit.</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4 pt-6 md:pt-0 border-t md:border-t-0 md:border-l border-slate-800 md:pl-8">
-                  {costItems.map((cost) => (
-                    <div key={cost.label}>
-                      <div className="flex items-center gap-1.5 text-slate-500 mb-1">
-                        <cost.icon className="w-3 h-3" />
-                        <span className="text-[9px] font-bold uppercase tracking-wider">{cost.label}</span>
-                      </div>
-                      <p className="text-sm font-bold">₱{cost.value.toFixed(2)}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* ── Hero: Costs ── */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 p-8 shadow-lg">
+            <span className="pointer-events-none select-none absolute -right-4 -top-4 text-[11rem] font-black text-white/10 leading-none">
+              ₱
+            </span>
 
-          <div className="bg-amber-50 p-6 rounded-3xl border border-amber-100">
-             <div className="flex gap-4">
-                <div className="p-2 bg-amber-100 rounded-xl text-amber-600 shrink-0 h-fit">
-                  <Info className="w-4 h-4" />
-                </div>
+            <div className="relative z-10 flex flex-col gap-6">
+              {/* Top row: per-unit + stock badge */}
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                 <div>
-                  <h5 className="text-xs font-black text-amber-900 uppercase tracking-wider">Audit Note</h5>
-                  <p className="text-xs text-amber-700 leading-relaxed mt-1 font-medium">
-                    This item is valued using the <b>Landed Cost</b> methodology. All duties and freight costs are capitalized and amortized across the current inventory quantity of {item.quantity}.
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">
+                    True Unit Cost · Landed
+                  </p>
+                  <p className="text-6xl font-black text-white leading-none tracking-tighter">
+                    ₱{trueUnitCost.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-white/50 mt-2">
+                    Per unit · base + freight + duties + taxes
                   </p>
                 </div>
-             </div>
+
+                <div className="flex items-center gap-2.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-4 py-3 w-fit shrink-0">
+                  <Package size={14} className="text-white/70" />
+                  <div>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-white/50">Stock</p>
+                    <p className="text-sm font-black text-white">{item.quantity} units</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px bg-white/20" />
+
+              {/* Bottom row: total inventory value */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60 mb-1">
+                    Total Inventory Value
+                  </p>
+                  <p className="text-3xl font-black text-white/90 leading-none tracking-tight">
+                    ₱{totalInventoryValue.toFixed(2)}
+                  </p>
+                  <p className="text-xs text-white/40 mt-1 font-mono">
+                    ₱{trueUnitCost.toFixed(2)} × {item.quantity} {item.quantity === 1 ? 'unit' : 'units'}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
+
+          {/* ── Cost Breakdown ── */}
+          <div>
+            <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.22em] text-stone-400 mb-4">
+              <TrendingUp size={10} />
+              Cost Breakdown
+              <span className="text-[8px] font-medium normal-case tracking-normal text-stone-300">(per unit)</span>
+              <span className="flex-1 h-px bg-stone-200" />
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {costBreakdown.map(({ label, value, icon: Icon, bar }) => {
+                const pct = trueUnitCost > 0 ? Math.round((value / trueUnitCost) * 100) : 0;
+                return (
+                  <div
+                    key={label}
+                    className="bg-white border border-stone-200 rounded-2xl p-4 hover:border-stone-300 hover:shadow-sm transition-all"
+                  >
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Icon size={11} className="text-stone-400 shrink-0" />
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-stone-400">{label}</span>
+                    </div>
+                    <p className="font-mono text-base font-semibold text-stone-800">₱{value.toFixed(2)}</p>
+                    <div className="mt-2.5 h-1 bg-stone-100 rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${bar} transition-all duration-700`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <p className="text-[9px] text-stone-300 mt-1 font-mono">{pct}% of unit cost</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Item Info Grid ── */}
+          <div>
+            <p className="flex items-center gap-2 text-[9px] font-black uppercase tracking-[0.22em] text-stone-400 mb-4">
+              <Zap size={10} />
+              Item Info
+              <span className="flex-1 h-px bg-stone-200" />
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div className="bg-white border border-stone-200 rounded-2xl p-4 hover:border-stone-300 hover:shadow-sm transition-all">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <MapPin size={10} className="text-stone-300" />
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-stone-300">Location</span>
+                </div>
+                <p className="text-sm font-bold text-stone-800 leading-snug">{warehouse?.name || 'Unknown Hub'}</p>
+              </div>
+
+              <div className="bg-white border border-stone-200 rounded-2xl p-4 hover:border-stone-300 hover:shadow-sm transition-all">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Layers size={10} className="text-stone-300" />
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-stone-300">Category</span>
+                </div>
+                <p className="text-sm font-bold text-stone-800 leading-snug">{getFullCategoryPath(item.categoryId)}</p>
+              </div>
+
+              <div className="bg-white border border-stone-200 rounded-2xl p-4 hover:border-stone-300 hover:shadow-sm transition-all col-span-2 md:col-span-1">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <Calendar size={10} className="text-stone-300" />
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-stone-300">Last Entry</span>
+                </div>
+                <p className="text-sm font-bold text-stone-800 leading-snug">
+                  {new Date(item.lastUpdated).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                  })}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Audit Note ── */}
+          <div className="flex gap-3.5 items-start bg-amber-50 border border-amber-200 rounded-2xl p-5">
+            <div className="shrink-0 w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-amber-500">
+              <Info size={13} />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-500 mb-1">Audit Note</p>
+              <p className="text-xs text-amber-700/70 leading-relaxed">
+                Valued via <span className="font-bold text-amber-700">Landed Cost</span> methodology.
+                True unit cost of <span className="font-bold text-amber-700">₱{trueUnitCost.toFixed(2)}</span> reflects
+                all per-unit cost components. Total inventory value of{' '}
+                <span className="font-bold text-amber-700">₱{totalInventoryValue.toFixed(2)}</span> is
+                computed across <span className="font-bold text-amber-700">{item.quantity} {item.quantity === 1 ? 'unit' : 'units'}</span> on hand.
+              </p>
+            </div>
+          </div>
+
         </div>
 
-        <div className="p-6 md:p-10 bg-slate-50/50 border-t border-slate-100 flex justify-end">
-          <button 
-            onClick={onClose}
-            className="w-full md:w-auto bg-white border border-slate-200 text-slate-900 px-8 py-3.5 rounded-2xl font-black text-sm shadow-sm hover:bg-slate-50 transition-all active:scale-95"
+        {/* ── Footer ── */}
+        <div className="sticky bottom-0 bg-stone-50/90 backdrop-blur-md border-t border-stone-200 px-6 py-4 flex justify-end">
+          <button
+            onClick={handleClose}
+            className="px-6 py-2.5 rounded-full text-sm font-semibold text-stone-600 bg-white border border-stone-200 shadow-sm hover:bg-stone-100 hover:text-stone-900 transition-all active:scale-95"
           >
             Close Details
           </button>
         </div>
+
       </div>
     </div>
   );

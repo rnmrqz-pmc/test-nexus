@@ -1,7 +1,6 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Item, Warehouse } from '../types';
-import { X, ArrowRightLeft, AlertCircle, Package, MapPin, ChevronLeft, ArrowRight } from 'lucide-react';
+import { X, ArrowRightLeft, AlertCircle, Package, MapPin, ArrowRight } from 'lucide-react';
 
 interface TransferItemModalProps {
   item: Item;
@@ -11,143 +10,250 @@ interface TransferItemModalProps {
 }
 
 const TransferItemModal: React.FC<TransferItemModalProps> = ({ item, warehouses, onClose, onConfirm }) => {
-  const [quantity, setQuantity] = useState<number>(1);
-  const [targetWhId, setTargetWhId] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
+  const [visible, setVisible]     = useState(false);
+  const [targetWhId, setTargetWhId] = useState('');
+  const [rawQty, setRawQty]       = useState('1');   // keep as string to allow clearing
+  const [error, setError]         = useState<string | null>(null);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setVisible(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 320);
+  };
 
   const currentWarehouse = warehouses.find(w => w.id === item.warehouseId);
-  const otherWarehouses = warehouses.filter(w => w.id !== item.warehouseId);
+  const otherWarehouses  = warehouses.filter(w => w.id !== item.warehouseId);
+  const targetWarehouse  = warehouses.find(w => w.id === targetWhId);
+
+  // Safe parsed quantity — NaN collapses to 0
+  const qty = parseInt(rawQty, 10) || 0;
+  const remaining = item.quantity - qty;
 
   const validateAndConfirm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!targetWhId) {
-      setError("Please select a destination warehouse.");
+      setError('Please select a destination warehouse.');
       return;
     }
-    if (quantity <= 0) {
-      setError("Quantity must be greater than zero.");
+    if (qty <= 0) {
+      setError('Quantity must be at least 1.');
       return;
     }
-    if (quantity > item.quantity) {
-      setError(`Cannot transfer more than available stock (${item.quantity}).`);
+    if (qty > item.quantity) {
+      setError(`Only ${item.quantity} ${item.quantity === 1 ? 'unit' : 'units'} available.`);
       return;
     }
-    onConfirm(targetWhId, quantity);
+    onConfirm(targetWhId, qty);
   };
 
+  // Quick-select buttons: 25 / 50 / 75 / 100 %
+  const presets = [25, 50, 75, 100];
+
   return (
-    <div className="fixed inset-0 z-[120] flex flex-col md:items-center md:justify-center">
-      <div className="hidden md:block absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
-      
-      <div className="flex-1 md:flex-initial w-full md:max-w-md bg-white md:rounded-[2rem] shadow-2xl relative overflow-hidden animate-in slide-in-from-bottom-full md:zoom-in duration-300">
-        <div className="p-6 md:p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <button onClick={onClose} className="md:hidden p-2 -ml-2 text-slate-400">
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-              <div className="p-2 rounded-xl text-white bg-indigo-600 shadow-lg shadow-indigo-200">
-                <ArrowRightLeft className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-black text-slate-900">Inter-Hub Transfer</h2>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Relocate Inventory Assets</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="hidden md:block p-2 hover:bg-slate-100 rounded-full text-slate-400">
-              <X className="w-6 h-6" />
-            </button>
+    <div
+      onClick={handleClose}
+      className={`
+        fixed inset-0 z-[120] flex items-end md:items-center md:justify-center
+        transition-all duration-300
+        ${visible
+          ? 'bg-stone-900/40 backdrop-blur-sm'
+          : 'bg-transparent backdrop-blur-none pointer-events-none'}
+      `}
+    >
+      <form
+        onSubmit={validateAndConfirm}
+        onClick={e => e.stopPropagation()}
+        className={`
+          relative w-full md:max-w-md
+          bg-stone-50 border border-stone-200 shadow-2xl
+          rounded-t-[2rem] md:rounded-[2rem]
+          overflow-hidden
+          transition-all duration-300 ease-out
+          ${visible
+            ? 'translate-y-0 opacity-100 md:scale-100'
+            : 'translate-y-full opacity-0 md:translate-y-4 md:scale-[0.97]'}
+        `}
+      >
+
+        {/* ── Header ── */}
+        <div className="bg-stone-50/90 backdrop-blur-md border-b border-stone-200 px-6 py-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.22em] text-stone-400">Inter-Hub</p>
+            <h2 className="text-lg font-black text-stone-900 leading-snug tracking-tight">Transfer Stock</h2>
           </div>
-
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 mb-6 flex items-start gap-3">
-             <div className="p-2 bg-white rounded-xl shadow-sm border border-slate-100 text-indigo-600">
-                <Package className="w-4 h-4" />
-             </div>
-             <div>
-                <p className="text-xs font-black text-slate-900 leading-tight">{item.name}</p>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                   <MapPin className="w-3 h-3 text-slate-400" />
-                   <span className="text-[10px] font-black text-slate-500 uppercase tracking-tighter">From: {currentWarehouse?.name}</span>
-                </div>
-             </div>
-          </div>
-
-          <form onSubmit={validateAndConfirm} className="space-y-6">
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Destination Warehouse</label>
-                <select 
-                  required
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all"
-                  value={targetWhId}
-                  onChange={e => {
-                    setTargetWhId(e.target.value);
-                    setError(null);
-                  }}
-                >
-                  <option value="" disabled>Select Target Location</option>
-                  {otherWarehouses.map(w => (
-                    <option key={w.id} value={w.id}>{w.name} ({w.prefix})</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Transfer Quantity</label>
-                <div className="relative">
-                  <input 
-                    required
-                    type="number" 
-                    min="1"
-                    className={`w-full bg-slate-50 border ${error ? 'border-rose-300' : 'border-slate-200'} rounded-xl px-4 py-3 text-lg font-black text-slate-900 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all`}
-                    value={quantity}
-                    onChange={e => {
-                      setQuantity(parseInt(e.target.value) || 0);
-                      setError(null);
-                    }}
-                  />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-[10px] uppercase">
-                    / {item.quantity} available
-                  </div>
-                </div>
-              </div>
-
-              {error && (
-                <div className="flex items-center gap-1.5 text-rose-500 px-1">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <p className="text-[10px] font-bold">{error}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-indigo-50 p-5 rounded-[2rem] border border-indigo-100 relative overflow-hidden">
-               <div className="flex items-center justify-between relative z-10">
-                  <div className="flex flex-col">
-                    <span className="text-[8px] font-black text-indigo-400 uppercase tracking-[0.2em] mb-1">Transfer Summary</span>
-                    <span className="text-sm font-black text-indigo-900">{quantity} units move to new hub</span>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-indigo-400" />
-               </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button 
-                type="button" 
-                onClick={onClose}
-                className="flex-1 px-6 py-4 bg-slate-50 text-slate-500 rounded-2xl font-bold text-sm hover:bg-slate-100 transition-all"
-              >
-                Cancel
-              </button>
-              <button 
-                type="submit"
-                className="flex-[2] bg-slate-900 text-white py-4 rounded-2xl font-black text-sm shadow-xl hover:bg-slate-800 active:scale-95 transition-all"
-              >
-                Request Transfer
-              </button>
-            </div>
-          </form>
+          <button
+            type="button"
+            onClick={handleClose}
+            className="shrink-0 w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-400 hover:text-stone-700 flex items-center justify-center transition-colors"
+          >
+            <X size={15} />
+          </button>
         </div>
-      </div>
+
+        <div className="p-6 space-y-6">
+
+          {/* ── Item + route card ── */}
+          <div className="bg-white border border-stone-200 rounded-2xl p-4">
+            {/* Item name */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-xl bg-stone-100 border border-stone-200 flex items-center justify-center shrink-0">
+                <Package size={15} className="text-stone-500" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-black text-stone-900 truncate">{item.name}</p>
+                <p className="text-[10px] font-mono text-stone-400">{item.quantity} units in stock</p>
+              </div>
+            </div>
+
+            {/* Route visualiser */}
+            <div className="flex items-center gap-2">
+              {/* From */}
+              <div className="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2.5">
+                <p className="text-[8px] font-black uppercase tracking-widest text-stone-300 mb-0.5">From</p>
+                <div className="flex items-center gap-1.5">
+                  <MapPin size={10} className="text-stone-400 shrink-0" />
+                  <p className="text-xs font-bold text-stone-700 truncate">{currentWarehouse?.name ?? '—'}</p>
+                </div>
+              </div>
+
+              {/* Arrow */}
+              <div className="shrink-0 w-7 h-7 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center">
+                <ArrowRight size={12} className="text-amber-600" />
+              </div>
+
+              {/* To */}
+              <div className={`flex-1 rounded-xl px-3 py-2.5 border transition-all ${
+                targetWarehouse
+                  ? 'bg-amber-50 border-amber-200'
+                  : 'bg-stone-50 border-stone-200'
+              }`}>
+                <p className="text-[8px] font-black uppercase tracking-widest text-stone-300 mb-0.5">To</p>
+                <div className="flex items-center gap-1.5">
+                  <MapPin size={10} className={targetWarehouse ? 'text-amber-500 shrink-0' : 'text-stone-300 shrink-0'} />
+                  <p className={`text-xs font-bold truncate ${targetWarehouse ? 'text-amber-700' : 'text-stone-300'}`}>
+                    {targetWarehouse?.name ?? 'Select below'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Destination select ── */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-stone-400 flex items-center gap-1.5">
+              <MapPin size={9} /> Destination Warehouse
+            </label>
+            <select
+              required
+              value={targetWhId}
+              onChange={e => { setTargetWhId(e.target.value); setError(null); }}
+              className="w-full bg-white border border-stone-200 rounded-xl px-3.5 py-3 text-sm font-semibold text-stone-800 focus:outline-none focus:ring-2 focus:ring-amber-400/40 focus:border-amber-400 transition-all appearance-none cursor-pointer"
+            >
+              <option value="" disabled>Select target location…</option>
+              {otherWarehouses.map(w => (
+                <option key={w.id} value={w.id}>{w.name} · {w.prefix}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* ── Quantity ── */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] font-black uppercase tracking-[0.2em] text-stone-400 flex items-center gap-1.5">
+              <ArrowRightLeft size={9} /> Transfer Quantity
+            </label>
+
+            {/* Preset buttons */}
+            <div className="grid grid-cols-4 gap-2 mb-1">
+              {presets.map(pct => {
+                const val = Math.max(1, Math.round((item.quantity * pct) / 100));
+                return (
+                  <button
+                    key={pct}
+                    type="button"
+                    onClick={() => { setRawQty(String(val)); setError(null); }}
+                    className={`py-1.5 text-[9px] font-black uppercase tracking-wider rounded-lg border transition-all ${
+                      qty === val
+                        ? 'bg-amber-50 text-amber-600 border-amber-300 ring-2 ring-amber-200'
+                        : 'bg-white text-stone-400 border-stone-200 hover:border-stone-300 hover:bg-stone-50'
+                    }`}
+                  >
+                    {pct}%
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Number input */}
+            <div className="relative">
+              <input
+                required
+                type="number"
+                min="1"
+                max={item.quantity}
+                value={rawQty}
+                onChange={e => { setRawQty(e.target.value); setError(null); }}
+                className={`
+                  w-full bg-white border rounded-xl px-4 py-3 text-2xl font-black text-stone-900
+                  focus:outline-none focus:ring-2 transition-all
+                  ${error
+                    ? 'border-rose-300 focus:ring-rose-200/50 focus:border-rose-400'
+                    : 'border-stone-200 focus:ring-amber-400/40 focus:border-amber-400'}
+                `}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-mono text-stone-300">
+                / {item.quantity} avail.
+              </span>
+            </div>
+
+            {/* Remaining indicator */}
+            {qty > 0 && qty <= item.quantity && (
+              <div className="flex items-center justify-between mt-1 px-1">
+                <div className="flex-1 h-1 bg-stone-100 rounded-full overflow-hidden mr-3">
+                  <div
+                    className="h-full rounded-full bg-amber-400 transition-all duration-300"
+                    style={{ width: `${Math.min(100, (qty / item.quantity) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-[9px] font-mono text-stone-400 shrink-0">
+                  {remaining} remaining after
+                </p>
+              </div>
+            )}
+
+            {/* Error */}
+            {error && (
+              <div className="flex items-center gap-1.5 text-rose-500 mt-1 px-1">
+                <AlertCircle size={12} />
+                <p className="text-[10px] font-bold">{error}</p>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+        {/* ── Footer ── */}
+        <div className="border-t border-stone-200 bg-stone-50/90 backdrop-blur-md px-6 py-4 flex gap-2">
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold text-stone-500 bg-white border border-stone-200 hover:bg-stone-100 transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="flex-[2] flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-black text-white bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 shadow-md hover:shadow-lg active:scale-95 transition-all"
+          >
+            <ArrowRightLeft size={14} />
+            Confirm Transfer
+          </button>
+        </div>
+
+      </form>
     </div>
   );
 };
