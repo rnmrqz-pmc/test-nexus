@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Item, Category, Warehouse, ItemStatus, UserRole, Permission } from '../types';
 import { Search, Filter, Plus, Minus, Info, Tag, Layers, ChevronRight, Box, Trash2, FileDown, Eye, Edit3, ArrowRightLeft, Check, ChevronLeft, ChevronRight as ChevronRightIcon, Printer, Scan, List } from 'lucide-react';
@@ -124,7 +123,6 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
 
   const handleAdjustStock = (qty: number) => {
     if (!adjustmentState.item || !adjustmentState.type) return;
-
     if (adjustmentState.type === 'OUT') {
       onStockOut(adjustmentState.item, qty);
     } else {
@@ -184,7 +182,8 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         </div>
       </div>
 
-      <div className="bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-3">
+      {/* Search + Category Filter */}
+      <div className="bg-white p-3 md:p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col md:flex-row gap-3 my-4">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input 
@@ -214,11 +213,24 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         </div>
       </div>
 
-      <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="overflow-x-auto">
+      {/* ── Desktop Table ── */}
+      <div className="hidden md:block bg-white rounded-2xl shadow-sm border border-slate-100 my-4 overflow-hidden">
+
+        {/*
+          SCROLLABLE TABLE BODY
+          ─────────────────────────────────────────────────────────────────────
+          Strategy: wrap the entire <table> in an overflow-x-auto + overflow-y-auto
+          div with a fixed max-height. The <thead> uses `sticky top-0 z-10` so it
+          stays visible as the tbody scrolls. The pagination bar lives OUTSIDE this
+          scroll container so it always anchors to the bottom of the card.
+        */}
+        <div
+          className="overflow-x-auto overflow-y-auto"
+          style={{ maxHeight: '480px' }}
+        >
           <table className="w-full text-left">
-            <thead>
-              <tr className="bg-slate-50/50 border-b border-slate-100">
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-slate-50 border-b border-slate-100">
                 <th className="px-6 py-4 w-10">
                   <div 
                     onClick={toggleSelectAll}
@@ -322,15 +334,6 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                           </button>
                         </>
                       )}
-                      {/* {canAction('delete') && (
-                        <button 
-                          onClick={() => deleteItem(item.id)}
-                          className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Delete SKU"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )} */}
                     </div>
                   </td>
                 </tr>
@@ -338,12 +341,17 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
             </tbody>
           </table>
         </div>
-        
-        {/* Pagination UI */}
-        <div className="px-6 py-4 border-t border-slate-50 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/30">
+
+        {/* ── Pagination — outside the scroll container ── */}
+        <div className="px-6 py-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/30">
           <div className="flex items-center gap-6">
             <p className="text-xs font-bold text-slate-500">
-              Showing <span className="text-slate-900">{isShowingAll ? 1 : indexOfFirstItem + 1}</span> to <span className="text-slate-900">{isShowingAll ? filteredItems.length : Math.min(indexOfLastItem, filteredItems.length)}</span> of <span className="text-slate-900">{filteredItems.length}</span> SKUs
+              Showing{' '}
+              <span className="text-slate-900">{isShowingAll ? 1 : indexOfFirstItem + 1}</span>
+              {' '}to{' '}
+              <span className="text-slate-900">{isShowingAll ? filteredItems.length : Math.min(indexOfLastItem, filteredItems.length)}</span>
+              {' '}of{' '}
+              <span className="text-slate-900">{filteredItems.length}</span> SKUs
             </p>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -411,6 +419,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         </div>
       </div>
 
+      {/* ── Mobile Cards ── */}
       <div className="md:hidden space-y-3">
         {currentItems.map(item => (
           <div key={item.id} className={`bg-white p-4 rounded-2xl border transition-all ${selectedIds.has(item.id) ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-100'}`}>
@@ -512,7 +521,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         )}
       </div>
 
-      {/* Bulk Action Bar */}
+      {/* ── Bulk Action Bar ── */}
       {selectedIds.size > 0 && (
         <div className="fixed bottom-20 md:bottom-10 left-1/2 -translate-x-1/2 z-[80] animate-in slide-in-from-bottom-10 duration-500">
           <div className="bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6 border border-white/10 backdrop-blur-md">
@@ -551,6 +560,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         </div>
       )}
 
+      {/* ── Modals ── */}
       {isAddModalOpen && (
         <AddItemModal 
           onClose={() => setIsAddModalOpen(false)}

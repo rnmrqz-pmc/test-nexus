@@ -413,8 +413,8 @@ const App: React.FC = () => {
 
   return (
     <>
-      {/* Offline / syncing banner — sits above everything */}
-      {!isOnline && <OfflineBanner isOnline={isOnline} isSyncing={isSyncing} pendingCount={pendingCount} />}
+      {/* Offline / syncing banner — shows when offline OR when syncing after reconnection */}
+      <OfflineBanner isOnline={isOnline} isSyncing={isSyncing} pendingCount={pendingCount} />
 
       <div className="flex flex-col md:flex-row min-h-screen bg-slate-50 overflow-hidden">
         <Sidebar

@@ -294,8 +294,8 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
           <h3 className="text-sm font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
             <WarehouseIcon className="w-4 h-4 text-indigo-500" /> Hub Distribution
           </h3>
-          <div className="h-[250px] md:h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[250px] md:h-[300px]" style={{ minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={warehouseStats.map(w => ({ name: w.shortName, value: w.value }))}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} />
@@ -316,8 +316,8 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
           <h3 className="text-sm font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
             <Package className="w-4 h-4 text-indigo-500" /> Item Types
           </h3>
-          <div className="h-[250px] md:h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[250px] md:h-[300px]" style={{ minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height={250}>
               <BarChart data={statusStats} layout="vertical" margin={{ left: 0, right: 16 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
                 <XAxis type="number" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10}} allowDecimals={false} />
@@ -346,8 +346,8 @@ const Dashboard: React.FC<DashboardProps> = ({ items, warehouses, transactions, 
           <h3 className="text-sm font-black text-slate-800 mb-6 flex items-center gap-2 uppercase tracking-widest">
             <Package className="w-4 h-4 text-indigo-500" /> Health
           </h3>
-          <div className="h-[200px] relative">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[200px] relative" style={{ minHeight: 0 }}>
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie data={statusStats} cx="50%" cy="50%" innerRadius={50} outerRadius={70} paddingAngle={5} dataKey="value">
                   {statusStats.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}

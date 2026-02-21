@@ -1,83 +1,128 @@
-// service-worker.js
-// Place this file in your /public directory
+// service-worker.js — Nexus Warehouse Pro
+// Strategy: Cache-First for static assets, Network-First for navigation/API
 
-const CACHE_NAME = 'warehouse-app-v1';
-const STATIC_ASSETS = [
+const CACHE_NAME = 'nexus-v1';
+const RUNTIME_CACHE = 'nexus-runtime-v1';
+
+// Files to pre-cache on install (app shell)
+const APP_SHELL = [
   '/',
   '/index.html',
-  '/manifest.json',
 ];
 
-// Install: cache static assets
+// External CDN origins to cache at runtime
+const CDN_ORIGINS = [
+  'https://cdn.tailwindcss.com',
+  'https://fonts.googleapis.com',
+  'https://fonts.gstatic.com',
+  'https://esm.sh',
+];
+
+// ─── Install: cache the app shell ─────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      console.log('[SW] Caching static assets');
-      return cache.addAll(STATIC_ASSETS);
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
   self.skipWaiting();
 });
 
-// Activate: clean up old caches
+// ─── Activate: clean up old caches ────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) =>
+    caches.keys().then((keys) =>
       Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+        keys
+          .filter((k) => k !== CACHE_NAME && k !== RUNTIME_CACHE)
+          .map((k) => caches.delete(k))
       )
     )
   );
   self.clients.claim();
 });
 
-// Fetch: network-first for API, cache-first for assets
+// ─── Fetch: serve from cache or network ───────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests and browser extensions
+  // Skip non-GET requests
   if (request.method !== 'GET') return;
-  if (url.protocol === 'chrome-extension:') return;
 
+  // Skip chrome-extension and other non-http schemes
+  if (!request.url.startsWith('http')) return;
+
+  // Navigation requests: Network-first, fall back to cached index.html (SPA)
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() =>
+          caches.match('/index.html').then((cached) => cached || fetch(request))
+        )
+    );
+    return;
+  }
+
+  // CDN assets (Tailwind, fonts, ESM modules): Cache-first, update in background
+  const isCDN = CDN_ORIGINS.some((origin) => request.url.startsWith(origin));
+  if (isCDN) {
+    event.respondWith(
+      caches.open(RUNTIME_CACHE).then(async (cache) => {
+        const cached = await cache.match(request);
+        if (cached) {
+          // Update cache in background (stale-while-revalidate)
+          fetch(request)
+            .then((fresh) => cache.put(request, fresh))
+            .catch(() => {});
+          return cached;
+        }
+        try {
+          const fresh = await fetch(request);
+          cache.put(request, fresh.clone());
+          return fresh;
+        } catch {
+          return new Response('Offline — resource unavailable', { status: 503 });
+        }
+      })
+    );
+    return;
+  }
+
+  // Same-origin static assets: Cache-first
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      caches.match(request).then(
+        (cached) =>
+          cached ||
+          fetch(request).then((response) => {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+            return response;
+          })
+      )
+    );
+    return;
+  }
+
+  // Everything else: Network-first
   event.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      // Try network first
-      try {
-        const networkResponse = await fetch(request);
-        // Cache successful responses for same-origin requests
-        if (networkResponse.ok && url.origin === self.location.origin) {
-          cache.put(request, networkResponse.clone());
-        }
-        return networkResponse;
-      } catch {
-        // Network failed — serve from cache
-        const cachedResponse = await cache.match(request);
-        if (cachedResponse) {
-          console.log('[SW] Serving from cache:', request.url);
-          return cachedResponse;
-        }
-        // For navigation requests, serve the app shell
-        if (request.mode === 'navigate') {
-          return cache.match('/index.html');
-        }
-        // Nothing available
-        return new Response('Offline', { status: 503 });
-      }
-    })
+    fetch(request).catch(() => caches.match(request))
   );
 });
 
-// Listen for sync events (background sync)
+// ─── Background Sync (if supported) ───────────────────────────────────────────
 self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-transactions') {
-    event.waitUntil(syncPendingTransactions());
+  if (event.tag === 'sync-pending-actions') {
+    event.waitUntil(
+      self.clients.matchAll().then((clients) => {
+        clients.forEach((client) =>
+          client.postMessage({ type: 'TRIGGER_SYNC' })
+        );
+      })
+    );
   }
 });
-
-async function syncPendingTransactions() {
-  // In a real app, you'd read from IndexedDB and POST to your server
-  console.log('[SW] Background sync triggered for transactions');
-}

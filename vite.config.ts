@@ -17,16 +17,25 @@ export default defineConfig(({ mode }) => {
 
       VitePWA({
         registerType: 'autoUpdate',
+        // Use our hand-crafted service worker instead of Workbox's generated one
+        strategies: 'injectManifest',
+        srcDir: 'public',
+        filename: 'service-worker.js',
+        injectManifest: {
+          injectionPoint: undefined, // We manage caching manually
+        },
         includeAssets: ['favicon.ico'],
 
         manifest: {
           name: 'Nexus Warehouse Pro',
           short_name: 'Nexus',
-          theme_color: '#ffffff',
-          background_color: '#ffffff',
+          description: 'Offline-first warehouse inventory management',
+          theme_color: '#4f46e5',
+          background_color: '#f8fafc',
           display: 'standalone',
           scope: '/',
           start_url: '/',
+          orientation: 'any',
           icons: [
             {
               src: '/pwa-192x192.png',
@@ -38,11 +47,13 @@ export default defineConfig(({ mode }) => {
               sizes: '512x512',
               type: 'image/png',
             },
+            {
+              src: '/pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any maskable',
+            },
           ],
-        },
-
-        workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
         },
       }),
     ],

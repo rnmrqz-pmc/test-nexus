@@ -120,7 +120,7 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
         <div className="p-6 md:p-8 space-y-8">
 
           {/* ── Hero: Costs ── */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-400 via-orange-400 to-rose-400 p-8 shadow-lg">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 p-8 shadow-lg">
             <span className="pointer-events-none select-none absolute -right-4 -top-4 text-[11rem] font-black text-white/10 leading-none">
               ₱
             </span>
@@ -239,18 +239,18 @@ const ItemDetailsModal: React.FC<ItemDetailsModalProps> = ({
           </div>
 
           {/* ── Audit Note ── */}
-          <div className="flex gap-3.5 items-start bg-amber-50 border border-amber-200 rounded-2xl p-5">
-            <div className="shrink-0 w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center text-amber-500">
+          <div className="flex gap-3.5 items-start bg-blue-50 border border-blue-200 rounded-2xl p-5">
+            <div className="shrink-0 w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-500">
               <Info size={13} />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-500 mb-1">Audit Note</p>
-              <p className="text-xs text-amber-700/70 leading-relaxed">
-                Valued via <span className="font-bold text-amber-700">Landed Cost</span> methodology.
-                True unit cost of <span className="font-bold text-amber-700">₱{trueUnitCost.toFixed(2)}</span> reflects
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-blue-500 mb-1">Audit Note</p>
+              <p className="text-xs text-blue-700/70 leading-relaxed">
+                Valued via <span className="font-bold text-blue-700">Landed Cost</span> methodology.
+                True unit cost of <span className="font-bold text-blue-700">₱{trueUnitCost.toFixed(2)}</span> reflects
                 all per-unit cost components. Total inventory value of{' '}
-                <span className="font-bold text-amber-700">₱{totalInventoryValue.toFixed(2)}</span> is
-                computed across <span className="font-bold text-amber-700">{item.quantity} {item.quantity === 1 ? 'unit' : 'units'}</span> on hand.
+                <span className="font-bold text-blue-700">₱{totalInventoryValue.toFixed(2)}</span> is
+                computed across <span className="font-bold text-blue-700">{item.quantity} {item.quantity === 1 ? 'unit' : 'units'}</span> on hand.
               </p>
             </div>
           </div>
