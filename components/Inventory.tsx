@@ -15,13 +15,14 @@ interface InventoryProps {
   setItems: React.Dispatch<React.SetStateAction<Item[]>>;
   categories: Category[];
   warehouses: Warehouse[];
+  onStockIn: (item: Item, qty: number) => void;
   onStockOut: (item: Item, qty: number) => void;
   onTransfer: (item: Item, targetWhId: string, qty: number) => void;
   role: UserRole;
   permissions: Permission[];
 }
 
-const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, warehouses, onStockOut, onTransfer, role, permissions }) => {
+const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, warehouses, onStockIn, onStockOut, onTransfer, role, permissions }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -127,11 +128,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
     if (adjustmentState.type === 'OUT') {
       onStockOut(adjustmentState.item, qty);
     } else {
-      setItems(prev => prev.map(i => 
-        i.id === adjustmentState.item?.id 
-          ? { ...i, quantity: i.quantity + qty, lastUpdated: new Date().toISOString() } 
-          : i
-      ));
+      onStockIn(adjustmentState.item, qty);
     }
     setAdjustmentState({ item: null, type: null });
   };
@@ -163,7 +160,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
   };
 
   return (
-    <div className="space-y-4 md:space-y-6 relative pb-20">
+    <div className="relative pb-20">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl md:text-2xl font-black text-slate-900">Inventory</h2>
@@ -278,7 +275,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-1 opacity-100 group-hover:opacity-100 transition-opacity">
                       <button 
                         onClick={() => setSelectedItemForView(item)}
                         className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
@@ -325,7 +322,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                           </button>
                         </>
                       )}
-                      {canAction('delete') && (
+                      {/* {canAction('delete') && (
                         <button 
                           onClick={() => deleteItem(item.id)}
                           className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
@@ -333,7 +330,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
-                      )}
+                      )} */}
                     </div>
                   </td>
                 </tr>

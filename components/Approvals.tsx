@@ -61,6 +61,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ transactions, items, warehouses, 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {pendingTxs.map(tx => {
                 const isTransfer = tx.type === 'TRANSFER';
+                const isStockOut = tx.type === 'STOCK_OUT';
                 return (
                   <div key={tx.id} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between">
                     <div className="flex justify-between items-start mb-4">
@@ -94,7 +95,8 @@ const Approvals: React.FC<ApprovalsProps> = ({ transactions, items, warehouses, 
                           <Calendar className="w-3 h-3" /> {new Date(tx.timestamp).toLocaleDateString()}
                         </div>
                       </div>
-                      <div className={`px-4 py-2 rounded-2xl border font-black text-xl ml-4 ${isTransfer ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
+                      <div className={`px-4 py-2 rounded-2xl border font-black text-xl ml-4 
+                        ${isTransfer ? 'bg-indigo-50 border-indigo-100 text-indigo-600' : isStockOut ? 'bg-rose-50 border-rose-100 text-rose-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'}`}>
                         {tx.quantity}
                       </div>
                     </div>
@@ -104,7 +106,7 @@ const Approvals: React.FC<ApprovalsProps> = ({ transactions, items, warehouses, 
                         onClick={() => onApprove(tx.id)}
                         className="flex-1 bg-slate-900 text-white py-3 rounded-xl text-sm font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95"
                       >
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400" /> {isTransfer ? 'Confirm Relocation' : 'Approve & Deduct'}
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" /> {isTransfer ? 'Confirm Relocation' : ( isStockOut ? 'Approve & Deduct' : 'Add to Inventory' )}
                       </button>
                       <button 
                         onClick={() => setRejectingTx(tx)}
@@ -126,6 +128,13 @@ const Approvals: React.FC<ApprovalsProps> = ({ transactions, items, warehouses, 
           <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
+                <tbody>
+                  {transactions.map(tx => (
+                    <tr key={tx.id} className="border-b border-slate-100">
+                      <td className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">{JSON.stringify(tx)}</td>
+                    </tr>
+                  ))}
+                </tbody>
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Reference ID</th>

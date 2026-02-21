@@ -54,7 +54,7 @@ export interface Item {
 
 export interface Transaction {
   id: string;
-  type: 'STOCK_OUT' | 'TRANSFER';
+  type: 'STOCK_OUT' | 'TRANSFER' | 'STOCK_IN';
   itemId: string;
   warehouseId: string;
   targetWarehouseId?: string;
