@@ -36,7 +36,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, role, onScan
         <div className="bg-indigo-600 p-2 rounded-lg">
           <Box className="w-6 h-6" />
         </div>
-        <h1 className="text-xl font-bold tracking-tight">Nexus Warehouse</h1>
+        <h1 className="text-xl font-bold tracking-tight">Nexus Inventory</h1>
       </div>
 
       <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
