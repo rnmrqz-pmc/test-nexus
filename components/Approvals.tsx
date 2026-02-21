@@ -128,13 +128,6 @@ const Approvals: React.FC<ApprovalsProps> = ({ transactions, items, warehouses, 
           <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <tbody>
-                  {transactions.map(tx => (
-                    <tr key={tx.id} className="border-b border-slate-100">
-                      <td className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">{JSON.stringify(tx)}</td>
-                    </tr>
-                  ))}
-                </tbody>
                 <thead>
                   <tr className="bg-slate-50/50 border-b border-slate-100">
                     <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Reference ID</th>
