@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Lock, User, ShieldCheck, ArrowRight } from 'lucide-react';
 import { UserRole } from '../types';
 
@@ -7,123 +6,178 @@ interface LoginProps {
   onLogin: (role: UserRole) => void;
 }
 
+const roleConfig: Record<UserRole, { label: string; desc: string }> = {
+  [UserRole.ADMIN]:    { label: 'Admin',    desc: 'Full system access' },
+  [UserRole.STAFF]:  { label: 'Staff',  desc: 'Inventory & reports' },
+  [UserRole.ACCOUNTANT]:   { label: 'Accountant',   desc: 'Read-only access' },
+};
+
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
+  const [mounted, setMounted]         = useState(false);
   const [selectedRole, setSelectedRole] = useState<UserRole>(UserRole.ADMIN);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [username, setUsername]       = useState('');
+  const [password, setPassword]       = useState('');
+  const [isLoading, setIsLoading]     = useState(false);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Simulate API delay
     setTimeout(() => {
       onLogin(selectedRole);
       setIsLoading(false);
     }, 800);
   };
 
+  const inputCls =
+    'w-full bg-white border border-stone-200 rounded-xl px-4 py-3.5 text-sm font-semibold text-stone-900 ' +
+    'placeholder:text-stone-300 focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400 transition-all';
+
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Decorative background elements */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600 rounded-full blur-[120px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-violet-600 rounded-full blur-[120px]" />
+    <div className="min-h-screen bg-stone-100 flex items-center justify-center p-4 relative overflow-hidden">
+
+      {/* ── Soft background blobs ── */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-blue-200/50 rounded-full blur-[100px]" />
+        <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-indigo-200/40 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] bg-blue-100/60 rounded-full blur-[80px]" />
       </div>
 
-      <div className="w-full max-w-md z-10">
-        <div className="bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/10">
-          <div className="p-8 md:p-12">
-            <div className="flex flex-col items-center mb-10 text-center">
-              <div className="bg-indigo-600 p-4 rounded-3xl shadow-xl shadow-indigo-200 mb-6 animate-bounce-slow">
-                <Box className="w-10 h-10 text-white" />
+      {/* ── Card ── */}
+      <div
+        className={`
+          relative z-10 w-full max-w-md
+          transition-all duration-500 ease-out
+          ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}
+        `}
+      >
+        <div className="bg-white border border-stone-200 rounded-[2.5rem] shadow-2xl overflow-hidden">
+
+          {/* ── Hero gradient strip ── */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600 px-10 pt-10 pb-16">
+            {/* Giant glyph */}
+            <span className="pointer-events-none select-none absolute -right-4 -top-4 text-[10rem] font-black text-white/10 leading-none">
+              ₱
+            </span>
+
+            <div className="relative z-10 flex flex-col items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 border border-white/30 backdrop-blur-sm flex items-center justify-center">
+                <Box size={22} className="text-white" />
               </div>
-              <h1 className="text-3xl font-black text-slate-900 tracking-tight mb-2">Nexus Pro</h1>
-              <p className="text-slate-500 font-medium">Global Warehouse Management</p>
+              <div>
+                <h1 className="text-3xl font-black text-white tracking-tight leading-none">Nexus IMS</h1>
+                <p className="text-white/60 text-sm font-medium mt-1">Inventory Management System</p>
+              </div>
             </div>
+          </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-4">
-                <div className="relative group">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                  <input 
-                    type="text" 
+          {/* ── Form ── */}
+          <div className="px-8 pt-8 pb-10 -mt-6 relative">
+            {/* Float card over gradient */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+
+              {/* Credentials */}
+              <div className="space-y-3 pt-4">
+                <div className="relative">
+                  <User size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-300 pointer-events-none" />
+                  <input
+                    type="text"
                     placeholder="Username"
-                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-900"
+                    required
+                    autoFocus
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
+                    onChange={e => setUsername(e.target.value)}
+                    className={`${inputCls} pl-10`}
                   />
                 </div>
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
-                  <input 
-                    type="password" 
+                <div className="relative">
+                  <Lock size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-300 pointer-events-none" />
+                  <input
+                    type="password"
                     placeholder="Password"
-                    className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-900"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
                     required
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    className={`${inputCls} pl-10`}
                   />
                 </div>
               </div>
 
-              <div className="space-y-3 pt-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Access Tier</label>
+              {/* Access tier */}
+              <div className="space-y-2">
+                <p className="text-[9px] font-black uppercase tracking-[0.22em] text-stone-400 flex items-center gap-2">
+                  Access Tier
+                  <span className="flex-1 h-px bg-stone-100" />
+                </p>
                 <div className="grid grid-cols-3 gap-2">
-                  {Object.values(UserRole).map((role) => (
-                    <button
-                      key={role}
-                      type="button"
-                      onClick={() => setSelectedRole(role)}
-                      className={`py-2 text-[10px] font-black rounded-xl border transition-all uppercase tracking-tighter ${
-                        selectedRole === role 
-                        ? 'bg-indigo-50 border-indigo-200 text-indigo-600 ring-2 ring-indigo-500/10' 
-                        : 'bg-white border-slate-100 text-slate-400 hover:bg-slate-50'
-                      }`}
-                    >
-                      {role}
-                    </button>
-                  ))}
+                  {(Object.values(UserRole) as UserRole[]).map(role => {
+                    const isActive = selectedRole === role;
+                    return (
+                      <button
+                        key={role}
+                        type="button"
+                        onClick={() => setSelectedRole(role)}
+                        className={`
+                          flex flex-col items-center gap-0.5 py-3 px-2 rounded-2xl border text-center transition-all
+                          ${isActive
+                            ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200 text-blue-700'
+                            : 'bg-stone-50 border-stone-200 text-stone-400 hover:border-stone-300 hover:bg-white'}
+                        `}
+                      >
+                        <span className={`text-[10px] font-black uppercase tracking-wider ${isActive ? 'text-blue-700' : 'text-stone-500'}`}>
+                          {roleConfig[role].label}
+                        </span>
+                        <span className={`text-[8px] font-medium leading-tight ${isActive ? 'text-blue-500' : 'text-stone-300'}`}>
+                          {roleConfig[role].desc}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              <button 
+              {/* Submit */}
+              <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-slate-900 text-white py-5 rounded-3xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-xl active:scale-[0.98] disabled:opacity-50 group mt-4"
+                className="
+                  w-full flex items-center justify-center gap-2
+                  py-4 rounded-2xl
+                  text-sm font-black text-white
+                  bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-600
+                  shadow-lg hover:shadow-xl active:scale-[0.98]
+                  disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100
+                  transition-all
+                "
               >
-                {isLoading ? (
-                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    Sign In to Dashboard
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </>
-                )}
+                {isLoading
+                  ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  : <>Sign In to Dashboard <ArrowRight size={16} /></>
+                }
               </button>
+
             </form>
 
-            <div className="mt-8 flex items-center justify-center gap-2 text-slate-400 text-sm font-medium">
-              <ShieldCheck className="w-4 h-4" />
+            {/* Footer note */}
+            <div className="mt-6 flex items-center justify-center gap-2 text-stone-400 text-[11px] font-medium">
+              <ShieldCheck size={13} />
               Secure Enterprise Environment
             </div>
           </div>
         </div>
-        <p className="mt-8 text-center text-slate-500 text-sm">
-          Need assistance? <span className="text-indigo-400 font-bold hover:underline cursor-pointer">Contact System Admin</span>
+
+        {/* Below-card link */}
+        <p className="mt-5 text-center text-stone-400 text-xs">
+          Need help?{' '}
+          <span className="text-blue-600 font-bold hover:underline cursor-pointer">
+            Contact System Admin
+          </span>
         </p>
       </div>
-
-      <style>{`
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-bounce-slow {
-          animation: bounce-slow 4s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 };
