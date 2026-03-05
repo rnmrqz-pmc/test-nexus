@@ -158,7 +158,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
   };
 
   return (
-    <div className="relative pb-20">
+    <div className="relative">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-xl md:text-2xl font-black text-slate-900">Inventory</h2>
@@ -226,7 +226,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         */}
         <div
           className="overflow-x-auto overflow-y-auto"
-          style={{ maxHeight: '480px' }}
+          style={{ maxHeight: '62vh' }}
         >
           <table className="w-full text-left">
             <thead className="sticky top-0 z-10">
@@ -334,6 +334,15 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
                           </button>
                         </>
                       )}
+                      {/* {canAction('delete') && (
+                        <button 
+                          onClick={() => deleteItem(item.id)}
+                          className="p-2 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Delete SKU"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )} */}
                     </div>
                   </td>
                 </tr>
@@ -341,17 +350,12 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
             </tbody>
           </table>
         </div>
-
-        {/* ── Pagination — outside the scroll container ── */}
-        <div className="px-6 py-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/30">
+        
+        {/* Pagination UI */}
+        <div className="px-6 py-4 border-t border-slate-50 flex flex-col md:flex-row items-center justify-between gap-4 bg-slate-50/30">
           <div className="flex items-center gap-6">
             <p className="text-xs font-bold text-slate-500">
-              Showing{' '}
-              <span className="text-slate-900">{isShowingAll ? 1 : indexOfFirstItem + 1}</span>
-              {' '}to{' '}
-              <span className="text-slate-900">{isShowingAll ? filteredItems.length : Math.min(indexOfLastItem, filteredItems.length)}</span>
-              {' '}of{' '}
-              <span className="text-slate-900">{filteredItems.length}</span> SKUs
+              Showing <span className="text-slate-900">{isShowingAll ? 1 : indexOfFirstItem + 1}</span> to <span className="text-slate-900">{isShowingAll ? filteredItems.length : Math.min(indexOfLastItem, filteredItems.length)}</span> of <span className="text-slate-900">{filteredItems.length}</span> SKUs
             </p>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
@@ -394,19 +398,39 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                <button 
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${
-                    currentPage === page 
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' 
-                      : 'text-slate-500 hover:bg-white border border-transparent hover:border-slate-200'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+              {(() => {
+                const pages: (number | '...')[] = [];
+                if (totalPages <= 5) {
+                  for (let i = 1; i <= totalPages; i++) pages.push(i);
+                } else {
+                  let start = Math.max(2, currentPage - 1);
+                  let end = Math.min(totalPages - 1, currentPage + 1);
+                  if (currentPage <= 3) { start = 2; end = 4; }
+                  if (currentPage >= totalPages - 2) { start = totalPages - 3; end = totalPages - 1; }
+                  pages.push(1);
+                  if (start > 2) pages.push('...');
+                  for (let i = start; i <= end; i++) pages.push(i);
+                  if (end < totalPages - 1) pages.push('...');
+                  pages.push(totalPages);
+                }
+                return pages.map((page, i) =>
+                  page === '...' ? (
+                    <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-xs text-slate-400 font-black">…</span>
+                  ) : (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-8 h-8 rounded-lg text-xs font-black transition-all ${
+                        currentPage === page
+                          ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200'
+                          : 'text-slate-500 hover:bg-white border border-transparent hover:border-slate-200'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                );
+              })()}
               <button 
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
@@ -419,7 +443,6 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         </div>
       </div>
 
-      {/* ── Mobile Cards ── */}
       <div className="md:hidden space-y-3">
         {currentItems.map(item => (
           <div key={item.id} className={`bg-white p-4 rounded-2xl border transition-all ${selectedIds.has(item.id) ? 'border-indigo-500 ring-2 ring-indigo-500/10' : 'border-slate-100'}`}>
@@ -521,7 +544,7 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         )}
       </div>
 
-      {/* ── Bulk Action Bar ── */}
+      {/* Bulk Action Bar */}
       {selectedIds.size > 0 && (
         <div className="fixed bottom-20 md:bottom-10 left-1/2 -translate-x-1/2 z-[80] animate-in slide-in-from-bottom-10 duration-500">
           <div className="bg-slate-900 text-white px-6 py-4 rounded-3xl shadow-2xl flex items-center gap-6 border border-white/10 backdrop-blur-md">
@@ -560,7 +583,6 @@ const Inventory: React.FC<InventoryProps> = ({ items, setItems, categories, ware
         </div>
       )}
 
-      {/* ── Modals ── */}
       {isAddModalOpen && (
         <AddItemModal 
           onClose={() => setIsAddModalOpen(false)}
